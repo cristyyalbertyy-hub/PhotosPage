@@ -82,11 +82,6 @@ function App() {
     await savePhotoOrder(reordered)
   }
 
-  async function handleApplyOrder(reordered) {
-    setPhotos(reordered)
-    await savePhotoOrder(reordered)
-  }
-
   if (loading) {
     return (
       <div className="app">
@@ -136,7 +131,6 @@ function App() {
               onToggleSelect={handleToggleSelect}
               onRemove={handleRemove}
               onSelectAll={handleSelectAll}
-              onApplyOrder={handleApplyOrder}
             />
             <PrintPanel photos={photos} />
           </>

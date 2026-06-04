@@ -297,101 +297,6 @@ section h2 {
   gap: 8px;
 }
 
-.order-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin: 12px 0 16px;
-  padding: 12px 14px;
-  background: var(--bg);
-  border-radius: 8px;
-  border: 1px solid var(--border);
-}
-
-.order-hint {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--text);
-}
-
-.order-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.btn-clear-order {
-  padding: 8px 14px;
-  border: 2px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: border-color 0.15s;
-}
-
-.btn-clear-order:hover {
-  border-color: var(--text);
-}
-
-.btn-apply-order {
-  padding: 8px 14px;
-  border: none;
-  border-radius: 8px;
-  background: var(--accent);
-  color: white;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: background 0.15s, opacity 0.15s;
-}
-
-.btn-apply-order:hover:not(:disabled) {
-  background: var(--accent-hover);
-}
-
-.btn-apply-order:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.order-error {
-  margin: 0 0 12px;
-  font-size: 0.85rem;
-  color: var(--danger);
-}
-
-.order-box {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  width: 32px;
-  height: 32px;
-  border: 2px solid white;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--text-h);
-  font-size: 0.95rem;
-  font-weight: 700;
-  text-align: center;
-  z-index: 2;
-  padding: 0;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-}
-
-.order-box:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-light);
-}
-
-.order-box::placeholder {
-  color: var(--text);
-  opacity: 0.5;
-  font-weight: 500;
-}
-
 .photo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -719,20 +624,6 @@ section h2 {
   .btn-select-all {
     width: 100%;
     text-align: center;
-  }
-
-  .order-bar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .order-actions {
-    width: 100%;
-  }
-
-  .btn-clear-order,
-  .btn-apply-order {
-    flex: 1;
   }
 
   .photo-grid {
