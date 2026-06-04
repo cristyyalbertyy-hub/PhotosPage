@@ -1,45 +1,72 @@
 import { useRef, useState } from 'react'
 
-export default function PhotoEntry({ onAdd }) {
+function createPendingItem(file) {
+  return {
+    id: crypto.randomUUID(),
+    blob: file,
+    name: file.name,
+    previewUrl: URL.createObjectURL(file),
+  }
+}
+
+export default function PhotoEntry({ onAddMany }) {
   const inputRef = useRef(null)
-  const [preview, setPreview] = useState(null)
-  const [file, setFile] = useState(null)
-  const [fileName, setFileName] = useState('')
+  const [pending, setPending] = useState([])
+  const [addedHint, setAddedHint] = useState('')
 
-  function handleFileChange(e) {
-    const selected = e.target.files?.[0]
-    if (!selected) return
+  function addFiles(fileList) {
+    const images = [...fileList].filter((f) => f.type.startsWith('image/'))
+    if (images.length === 0) return
 
-    if (preview) URL.revokeObjectURL(preview)
-    setFile(selected)
-    setPreview(URL.createObjectURL(selected))
-    setFileName(selected.name)
+    setPending((prev) => [...prev, ...images.map(createPendingItem)])
+    setAddedHint('')
+    if (inputRef.current) inputRef.current.value = ''
   }
 
-  function handleAdd() {
-    if (!file) return
-    onAdd({ blob: file, name: fileName })
-    setPreview(null)
-    setFile(null)
-    setFileName('')
-    if (inputRef.current) inputRef.current.value = ''
+  function handleFileChange(e) {
+    if (e.target.files?.length) addFiles(e.target.files)
   }
 
   function handleDrop(e) {
     e.preventDefault()
-    const dropped = e.dataTransfer.files?.[0]
-    if (!dropped || !dropped.type.startsWith('image/')) return
+    if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files)
+  }
 
-    if (preview) URL.revokeObjectURL(preview)
-    setFile(dropped)
-    setPreview(URL.createObjectURL(dropped))
-    setFileName(dropped.name)
+  function removePending(id) {
+    setPending((prev) => {
+      const item = prev.find((p) => p.id === id)
+      if (item) URL.revokeObjectURL(item.previewUrl)
+      return prev.filter((p) => p.id !== id)
+    })
+  }
+
+  function clearPending() {
+    pending.forEach((p) => URL.revokeObjectURL(p.previewUrl))
+    setPending([])
+    if (inputRef.current) inputRef.current.value = ''
+  }
+
+  function handleAddAll() {
+    if (pending.length === 0) return
+
+    onAddMany(pending.map((p) => ({ blob: p.blob, name: p.name })))
+    pending.forEach((p) => URL.revokeObjectURL(p.previewUrl))
+    setPending([])
+    if (inputRef.current) inputRef.current.value = ''
+
+    const n = pending.length
+    setAddedHint(
+      `${n} foto${n !== 1 ? 's' : ''} adicionada${n !== 1 ? 's' : ''} à coleção. Pode escolher mais.`,
+    )
   }
 
   return (
     <section className="photo-entry">
       <h2>Entrada de Fotos</h2>
-      <p className="section-desc">Selecione uma imagem e adicione à coleção</p>
+      <p className="section-desc">
+        Escolha uma ou várias imagens. Remova as que não quiser (✕) e depois adicione à
+        coleção.
+      </p>
 
       <div
         className="drop-zone"
@@ -47,34 +74,69 @@ export default function PhotoEntry({ onAdd }) {
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
       >
-        {preview ? (
-          <img src={preview} alt="Pré-visualização" className="preview-img" />
-        ) : (
-          <div className="drop-placeholder">
-            <span className="drop-icon">📷</span>
-            <span>Clique ou arraste uma imagem</span>
-          </div>
-        )}
+        <div className="drop-placeholder">
+          <span className="drop-icon">📷</span>
+          <span>Clique ou arraste imagens (pode escolher várias)</span>
+        </div>
         <input
           ref={inputRef}
           type="file"
           accept="image/*"
+          multiple
           onChange={handleFileChange}
           hidden
         />
       </div>
 
-      {fileName && <p className="file-name">{fileName}</p>}
+      {pending.length > 0 && (
+        <>
+          <div className="pending-header">
+            <p className="pending-count">
+              {pending.length} foto{pending.length !== 1 ? 's' : ''} selecionada
+              {pending.length !== 1 ? 's' : ''}
+            </p>
+            <button
+              type="button"
+              className="btn-clear-pending"
+              onClick={clearPending}
+            >
+              Limpar tudo
+            </button>
+          </div>
+
+          <div className="pending-grid">
+            {pending.map((item) => (
+              <div key={item.id} className="pending-card">
+                <button
+                  type="button"
+                  className="btn-remove"
+                  onClick={() => removePending(item.id)}
+                  title="Remover desta seleção"
+                  aria-label="Remover desta seleção"
+                >
+                  ✕
+                </button>
+                <img src={item.previewUrl} alt={item.name} />
+                <p className="pending-name">{item.name}</p>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {addedHint && <p className="add-hint">{addedHint}</p>}
 
       <button
         type="button"
         className="btn-add"
-        onClick={handleAdd}
-        disabled={!file}
-        title="Adicionar foto"
+        onClick={handleAddAll}
+        disabled={pending.length === 0}
+        title="Adicionar fotos à coleção"
       >
         <span className="plus">+</span>
-        Adicionar foto
+        {pending.length > 0
+          ? `Adicionar ${pending.length} foto${pending.length !== 1 ? 's' : ''}`
+          : 'Adicionar à coleção'}
       </button>
     </section>
   )

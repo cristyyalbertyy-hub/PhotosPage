@@ -32,23 +32,22 @@ function App() {
     }
   }, [])
 
-  async function handleAddPhoto({ blob, name }) {
-    const photo = {
-      id: crypto.randomUUID(),
-      url: URL.createObjectURL(blob),
-      name,
-      selected: false,
-      blob,
-      addedAt: Date.now(),
-      sortOrder: photos.length,
-    }
+  async function handleAddMany(items) {
+    if (items.length === 0) return
 
     setPhotos((prev) => {
-      const next = { ...photo, sortOrder: prev.length }
-      savePhoto(next)
-      return [...prev, next]
+      const batch = items.map((item, i) => ({
+        id: crypto.randomUUID(),
+        url: URL.createObjectURL(item.blob),
+        name: item.name,
+        selected: false,
+        blob: item.blob,
+        addedAt: Date.now() + i,
+        sortOrder: prev.length + i,
+      }))
+      batch.forEach((p) => savePhoto(p))
+      return [...prev, ...batch]
     })
-    setActiveTab('lista')
   }
 
   async function handleToggleSelect(id) {
@@ -128,7 +127,7 @@ function App() {
       </nav>
 
       <main className="app-main">
-        {activeTab === 'entrada' && <PhotoEntry onAdd={handleAddPhoto} />}
+        {activeTab === 'entrada' && <PhotoEntry onAddMany={handleAddMany} />}
 
         {activeTab === 'lista' && (
           <>
