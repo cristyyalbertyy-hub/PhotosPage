@@ -1,14 +1,19 @@
 import { getSlotsForPage, LAYOUT_META } from '../utils/pdfLayouts'
 
-export default function LayoutPreview({ photosPerPage, photoCount }) {
+export default function LayoutPreview({ photosPerPage, photoCount, orientation = 'portrait' }) {
   const layout = LAYOUT_META[photosPerPage]
   const countOnPage = Math.min(photoCount || photosPerPage, photosPerPage)
   const slots = getSlotsForPage(photosPerPage, countOnPage)
+  const isLandscape = orientation === 'landscape'
 
   return (
     <div className="layout-preview">
-      <p className="layout-label">{layout.label}</p>
-      <div className="layout-page">
+      <p className="layout-label">
+        {layout.label} — {isLandscape ? 'paisagem' : 'retrato'}
+      </p>
+      <div
+        className={`layout-page ${isLandscape ? 'layout-page--landscape' : ''}`}
+      >
         {Array.from({ length: layout.cols * layout.rows }).map((_, i) => {
           const col = i % layout.cols
           const row = Math.floor(i / layout.cols)

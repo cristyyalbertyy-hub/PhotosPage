@@ -529,6 +529,51 @@ section h2 {
   overflow: hidden;
 }
 
+.layout-page--landscape {
+  width: 160px;
+  aspect-ratio: 297 / 210;
+}
+
+.orientation-options {
+  display: flex;
+  gap: 8px;
+}
+
+.orientation-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-h);
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.orientation-btn:hover {
+  border-color: var(--accent);
+}
+
+.orientation-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.orientation-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.orientation-icon--landscape {
+  transform: rotate(90deg);
+}
+
 .layout-cell-bg {
   position: absolute;
   box-sizing: border-box;

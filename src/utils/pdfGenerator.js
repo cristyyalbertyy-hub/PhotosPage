@@ -1,10 +1,15 @@
 import { jsPDF } from 'jspdf'
 import { getSlotsForPage, LAYOUT_META, slotToRect } from './pdfLayouts'
 
-const PAGE_WIDTH = 210
-const PAGE_HEIGHT = 297
 const MARGIN = 10
 const GAP = 4
+
+export function getPageDimensions(orientation) {
+  if (orientation === 'landscape') {
+    return { width: 297, height: 210 }
+  }
+  return { width: 210, height: 297 }
+}
 
 function loadImage(url) {
   return new Promise((resolve, reject) => {
@@ -37,17 +42,23 @@ function fitInCell(imgW, imgH, cellW, cellH) {
   }
 }
 
-export async function generatePdf(photoUrls, photosPerPage, filename) {
+export async function generatePdf(
+  photoUrls,
+  photosPerPage,
+  filename,
+  orientation = 'portrait',
+) {
   if (photoUrls.length === 0) {
     throw new Error('Nenhuma foto selecionada')
   }
 
   const layout = LAYOUT_META[photosPerPage]
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const { width: pageWidth, height: pageHeight } = getPageDimensions(orientation)
+  const pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4' })
   const loadedImages = await Promise.all(photoUrls.map(loadImage))
 
   for (let pageStart = 0; pageStart < loadedImages.length; pageStart += photosPerPage) {
-    if (pageStart > 0) pdf.addPage()
+    if (pageStart > 0) pdf.addPage(orientation, 'a4')
 
     const pagePhotos = loadedImages.slice(pageStart, pageStart + photosPerPage)
     const slots = getSlotsForPage(photosPerPage, pagePhotos.length)
@@ -59,8 +70,8 @@ export async function generatePdf(photoUrls, photosPerPage, filename) {
         layout.rows,
         MARGIN,
         GAP,
-        PAGE_WIDTH,
-        PAGE_HEIGHT,
+        pageWidth,
+        pageHeight,
       )
       const fit = fitInCell(img.width, img.height, rect.cellW, rect.cellH)
       pdf.addImage(

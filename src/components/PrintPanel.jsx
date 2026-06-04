@@ -4,6 +4,7 @@ import LayoutPreview from './LayoutPreview'
 
 export default function PrintPanel({ photos }) {
   const [photosPerPage, setPhotosPerPage] = useState(4)
+  const [orientation, setOrientation] = useState('portrait')
   const [filename, setFilename] = useState('fotos')
   const [printing, setPrinting] = useState(false)
   const [error, setError] = useState('')
@@ -23,6 +24,7 @@ export default function PrintPanel({ photos }) {
         selectedPhotos.map((p) => p.url),
         photosPerPage,
         filename,
+        orientation,
       )
     } catch (err) {
       setError(err.message || 'Erro ao gerar PDF')
@@ -47,6 +49,32 @@ export default function PrintPanel({ photos }) {
 
       <div className="print-controls">
         <label className="control-group">
+          <span>Orientação da página</span>
+          <div className="orientation-options">
+            <button
+              type="button"
+              className={`orientation-btn ${orientation === 'portrait' ? 'active' : ''}`}
+              onClick={() => setOrientation('portrait')}
+            >
+              <span className="orientation-icon" aria-hidden="true">
+                ▯
+              </span>
+              Retrato
+            </button>
+            <button
+              type="button"
+              className={`orientation-btn ${orientation === 'landscape' ? 'active' : ''}`}
+              onClick={() => setOrientation('landscape')}
+            >
+              <span className="orientation-icon orientation-icon--landscape" aria-hidden="true">
+                ▭
+              </span>
+              Paisagem
+            </button>
+          </div>
+        </label>
+
+        <label className="control-group">
           <span>Fotos por página</span>
           <div className="per-page-options">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
@@ -64,6 +92,7 @@ export default function PrintPanel({ photos }) {
 
         <LayoutPreview
           photosPerPage={photosPerPage}
+          orientation={orientation}
           photoCount={
             selectedPhotos.length > 0
               ? totalPages > 1
