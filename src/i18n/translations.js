@@ -35,6 +35,20 @@ export const translations = {
     confirmNo: 'Cancelar',
     printTitle: 'Imprimir',
     printDesc: 'Guardar as fotos selecionadas num ficheiro PDF',
+    quality: 'Qualidade',
+    qualityEmail: 'Email',
+    qualityPrint: 'Impressão',
+    qualityHint_email:
+      'Ficheiro mais leve (~200 DPI) — ideal para enviar por email (limite 25 MB)',
+    qualityHint_print:
+      'Alta qualidade (~300 DPI) — melhor para impressão profissional',
+    estimatingSize: 'A calcular tamanho estimado...',
+    sizeEstimateOk: (size) => `~${size} — OK para email`,
+    sizeEstimateSplit: (size, parts) =>
+      `~${size} — será dividido em ${parts} PDF${parts !== 1 ? 's' : ''}`,
+    downloadAsZip: 'Descarregar como ZIP (vários PDFs num ficheiro)',
+    generatingPart: (current, total) =>
+      `A gerar parte ${current} de ${total}...`,
     orientation: 'Orientação da página',
     portrait: 'Retrato',
     landscape: 'Paisagem',
@@ -93,6 +107,20 @@ export const translations = {
     confirmNo: 'Cancel',
     printTitle: 'Print',
     printDesc: 'Save selected photos to a PDF file',
+    quality: 'Quality',
+    qualityEmail: 'Email',
+    qualityPrint: 'Print',
+    qualityHint_email:
+      'Smaller file (~200 DPI) — ideal for email (25 MB limit)',
+    qualityHint_print:
+      'High quality (~300 DPI) — best for professional printing',
+    estimatingSize: 'Calculating estimated size...',
+    sizeEstimateOk: (size) => `~${size} — OK for email`,
+    sizeEstimateSplit: (size, parts) =>
+      `~${size} — will be split into ${parts} PDF${parts !== 1 ? 's' : ''}`,
+    downloadAsZip: 'Download as ZIP (multiple PDFs in one file)',
+    generatingPart: (current, total) =>
+      `Generating part ${current} of ${total}...`,
     orientation: 'Page orientation',
     portrait: 'Portrait',
     landscape: 'Landscape',

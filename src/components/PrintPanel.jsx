@@ -1,20 +1,78 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLanguage } from '../i18n/LanguageContext'
-import { generatePdf } from '../utils/pdfGenerator'
+import { estimatePdfSize, formatBytes, generatePdf } from '../utils/pdfGenerator'
 import LayoutPreview from './LayoutPreview'
 
 export default function PrintPanel({ photos }) {
-  const { t } = useLanguage()
+  const { lang, t } = useLanguage()
   const [photosPerPage, setPhotosPerPage] = useState(4)
   const [orientation, setOrientation] = useState('portrait')
-  const [filename, setFilename] = useState('fotos')
+  const [filename, setFilename] = useState(lang === 'en' ? 'photos' : 'fotos')
+  const [quality, setQuality] = useState('email')
+  const [downloadAsZip, setDownloadAsZip] = useState(true)
   const [printing, setPrinting] = useState(false)
+  const [progress, setProgress] = useState(null)
   const [error, setError] = useState('')
+  const [estimate, setEstimate] = useState(null)
+  const [estimating, setEstimating] = useState(false)
 
-  const selectedPhotos = photos.filter((p) => p.selected)
+  const selectedPhotos = useMemo(
+    () => photos.filter((p) => p.selected),
+    [photos],
+  )
+  const selectedUrls = useMemo(
+    () => selectedPhotos.map((p) => p.url),
+    [selectedPhotos],
+  )
+
+  useEffect(() => {
+    setFilename((prev) => {
+      if (prev === 'fotos' || prev === 'photos') {
+        return lang === 'en' ? 'photos' : 'fotos'
+      }
+      return prev
+    })
+  }, [lang])
+
+  useEffect(() => {
+    if (selectedUrls.length === 0) {
+      setEstimate(null)
+      setEstimating(false)
+      return
+    }
+
+    let cancelled = false
+    setEstimating(true)
+
+    const timer = setTimeout(async () => {
+      try {
+        const result = await estimatePdfSize(
+          selectedUrls,
+          photosPerPage,
+          orientation,
+          quality,
+        )
+        if (!cancelled) setEstimate(result)
+      } catch {
+        if (!cancelled) setEstimate(null)
+      } finally {
+        if (!cancelled) setEstimating(false)
+      }
+    }, 400)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [selectedUrls, photosPerPage, orientation, quality])
+
+  useEffect(() => {
+    if (estimate?.partCount > 1) setDownloadAsZip(true)
+  }, [estimate?.partCount])
 
   async function handlePrint() {
     setError('')
+    setProgress(null)
     if (selectedPhotos.length === 0) {
       setError(t('noPhotosSelected'))
       return
@@ -22,12 +80,17 @@ export default function PrintPanel({ photos }) {
 
     setPrinting(true)
     try {
-      await generatePdf(
-        selectedPhotos.map((p) => p.url),
+      await generatePdf({
+        photoUrls: selectedUrls,
         photosPerPage,
         filename,
         orientation,
-      )
+        quality,
+        downloadAsZip: estimate?.partCount > 1 && downloadAsZip,
+        onProgress: ({ current, total }) => {
+          setProgress({ current, total })
+        },
+      })
     } catch (err) {
       if (err.message === 'NO_PHOTOS_SELECTED') {
         setError(t('noPhotosSelected'))
@@ -36,12 +99,44 @@ export default function PrintPanel({ photos }) {
       }
     } finally {
       setPrinting(false)
+      setProgress(null)
     }
   }
 
   const totalPages = Math.ceil(selectedPhotos.length / photosPerPage)
   const lastPageCount =
     selectedPhotos.length % photosPerPage || photosPerPage
+
+  function renderSizeEstimate() {
+    if (selectedPhotos.length === 0) return null
+    if (estimating) {
+      return <p className="size-estimate size-estimate--loading">{t('estimatingSize')}</p>
+    }
+    if (!estimate) return null
+
+    const sizeLabel = formatBytes(estimate.totalBytes)
+    if (estimate.fitsEmail) {
+      return (
+        <p className="size-estimate size-estimate--ok">
+          {t('sizeEstimateOk', sizeLabel)}
+        </p>
+      )
+    }
+
+    return (
+      <p className="size-estimate size-estimate--warn">
+        {t('sizeEstimateSplit', sizeLabel, estimate.partCount)}
+      </p>
+    )
+  }
+
+  function renderProgressLabel() {
+    if (!progress) return t('generatingPdf')
+    if (progress.total > 1) {
+      return t('generatingPart', progress.current, progress.total)
+    }
+    return t('generatingPdf')
+  }
 
   return (
     <section className="print-panel">
@@ -54,6 +149,29 @@ export default function PrintPanel({ photos }) {
       <p className="section-desc">{t('printDesc')}</p>
 
       <div className="print-controls">
+        <label className="control-group">
+          <span>{t('quality')}</span>
+          <div className="orientation-options">
+            <button
+              type="button"
+              className={`orientation-btn ${quality === 'email' ? 'active' : ''}`}
+              onClick={() => setQuality('email')}
+            >
+              {t('qualityEmail')}
+            </button>
+            <button
+              type="button"
+              className={`orientation-btn ${quality === 'print' ? 'active' : ''}`}
+              onClick={() => setQuality('print')}
+            >
+              {t('qualityPrint')}
+            </button>
+          </div>
+          <p className="control-hint">
+            {t(quality === 'email' ? 'qualityHint_email' : 'qualityHint_print')}
+          </p>
+        </label>
+
         <label className="control-group">
           <span>{t('orientation')}</span>
           <div className="orientation-options">
@@ -118,9 +236,11 @@ export default function PrintPanel({ photos }) {
               type="text"
               value={filename}
               onChange={(e) => setFilename(e.target.value)}
-              placeholder="fotos"
+              placeholder={lang === 'en' ? 'photos' : 'fotos'}
             />
-            <span className="extension">.pdf</span>
+            <span className="extension">
+              {estimate?.partCount > 1 && downloadAsZip ? '.zip' : '.pdf'}
+            </span>
           </div>
         </label>
 
@@ -130,18 +250,31 @@ export default function PrintPanel({ photos }) {
           </p>
         )}
 
+        {renderSizeEstimate()}
+
+        {estimate?.partCount > 1 && (
+          <label className="zip-option">
+            <input
+              type="checkbox"
+              checked={downloadAsZip}
+              onChange={(e) => setDownloadAsZip(e.target.checked)}
+            />
+            <span>{t('downloadAsZip')}</span>
+          </label>
+        )}
+
         {error && <p className="print-error">{error}</p>}
 
         <button
           type="button"
           className="btn-print"
           onClick={handlePrint}
-          disabled={printing || selectedPhotos.length === 0}
+          disabled={printing || selectedPhotos.length === 0 || estimating}
         >
           <span className="printer-icon-sm" aria-hidden="true">
             🖨️
           </span>
-          {printing ? t('generatingPdf') : t('savePdf')}
+          {printing ? renderProgressLabel() : t('savePdf')}
         </button>
       </div>
     </section>
