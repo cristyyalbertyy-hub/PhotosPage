@@ -85,6 +85,12 @@ export async function savePhotoOrder(photos) {
   await Promise.all(photos.map((photo) => savePhoto(photo)))
 }
 
+export async function clearAllPhotos() {
+  await runTransaction('readwrite', (store) => {
+    store.clear()
+  })
+}
+
 export async function saveAllSelections(photos) {
   const db = await openDB()
 

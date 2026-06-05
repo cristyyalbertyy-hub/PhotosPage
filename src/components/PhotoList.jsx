@@ -1,9 +1,22 @@
-export default function PhotoList({ photos, onToggleSelect, onRemove, onSelectAll }) {
+import { useState } from 'react'
+import ConfirmDialog from './ConfirmDialog'
+import { useLanguage } from '../i18n/LanguageContext'
+
+export default function PhotoList({
+  photos,
+  onToggleSelect,
+  onRemove,
+  onSelectAll,
+  onClearAll,
+}) {
+  const { t } = useLanguage()
+  const [confirmOpen, setConfirmOpen] = useState(false)
+
   if (photos.length === 0) {
     return (
       <section className="photo-list">
-        <h2>Lista de Fotos</h2>
-        <p className="empty-state">Ainda não há fotos. Adicione na secção de entrada.</p>
+        <h2>{t('listTitle')}</h2>
+        <p className="empty-state">{t('listEmpty')}</p>
       </section>
     )
   }
@@ -11,14 +24,18 @@ export default function PhotoList({ photos, onToggleSelect, onRemove, onSelectAl
   const selectedCount = photos.filter((p) => p.selected).length
   const allSelected = selectedCount === photos.length
 
+  async function handleConfirmClear() {
+    setConfirmOpen(false)
+    await onClearAll()
+  }
+
   return (
     <section className="photo-list">
       <div className="list-header">
         <div>
-          <h2>Lista de Fotos</h2>
+          <h2>{t('listTitle')}</h2>
           <p className="section-desc">
-            {selectedCount} de {photos.length} selecionada{selectedCount !== 1 ? 's' : ''}
-            {' — '}ordem de adição
+            {t('selectedOf', selectedCount, photos.length)}
           </p>
         </div>
         <div className="list-actions">
@@ -27,7 +44,14 @@ export default function PhotoList({ photos, onToggleSelect, onRemove, onSelectAl
             className="btn-select-all"
             onClick={() => onSelectAll(!allSelected)}
           >
-            {allSelected ? 'Desselecionar todas' : 'Selecionar todas'}
+            {allSelected ? t('deselectAll') : t('selectAll')}
+          </button>
+          <button
+            type="button"
+            className="btn-clear-all"
+            onClick={() => setConfirmOpen(true)}
+          >
+            {t('clearAll')}
           </button>
         </div>
       </div>
@@ -42,8 +66,8 @@ export default function PhotoList({ photos, onToggleSelect, onRemove, onSelectAl
               type="button"
               className="btn-remove"
               onClick={() => onRemove(photo.id)}
-              title="Remover foto"
-              aria-label="Remover foto"
+              title={t('removePhoto')}
+              aria-label={t('removePhoto')}
             >
               ✕
             </button>
@@ -54,8 +78,10 @@ export default function PhotoList({ photos, onToggleSelect, onRemove, onSelectAl
               type="button"
               className={`select-box ${photo.selected ? 'checked' : ''}`}
               onClick={() => onToggleSelect(photo.id)}
-              title={photo.selected ? 'Desselecionar' : 'Selecionar para imprimir'}
-              aria-label={photo.selected ? 'Desselecionar foto' : 'Selecionar foto'}
+              title={photo.selected ? t('deselectPhoto') : t('selectForPrint')}
+              aria-label={
+                photo.selected ? t('deselectPhoto') : t('selectForPrint')
+              }
               aria-pressed={photo.selected}
             >
               {photo.selected && <span className="check-mark">✓</span>}
@@ -63,6 +89,16 @@ export default function PhotoList({ photos, onToggleSelect, onRemove, onSelectAl
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title={t('confirmClearTitle')}
+        message={t('confirmClearMessage')}
+        confirmLabel={t('confirmYes')}
+        cancelLabel={t('confirmNo')}
+        onConfirm={handleConfirmClear}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </section>
   )
 }

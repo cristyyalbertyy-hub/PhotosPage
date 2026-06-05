@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import PhotoEntry from './components/PhotoEntry'
 import PhotoList from './components/PhotoList'
 import PrintPanel from './components/PrintPanel'
+import { useLanguage } from './i18n/LanguageContext'
 import {
+  clearAllPhotos,
   deletePhoto,
   loadPhotos,
   saveAllSelections,
@@ -12,6 +14,7 @@ import {
 import './App.css'
 
 function App() {
+  const { lang, setLang, t } = useLanguage()
   const [photos, setPhotos] = useState([])
   const [activeTab, setActiveTab] = useState('entrada')
   const [loading, setLoading] = useState(true)
@@ -82,12 +85,18 @@ function App() {
     await savePhotoOrder(reordered)
   }
 
+  async function handleClearAll() {
+    photos.forEach((p) => URL.revokeObjectURL(p.url))
+    await clearAllPhotos()
+    setPhotos([])
+  }
+
   if (loading) {
     return (
       <div className="app">
         <div className="loading-state">
           <div className="spinner" />
-          <p>A carregar fotos guardadas...</p>
+          <p>{t('loading')}</p>
         </div>
       </div>
     )
@@ -96,10 +105,28 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Photos Page</h1>
-        <p className="subtitle">Adicione, organize e exporte as suas fotos em PDF</p>
+        <div className="header-top">
+          <h1>{t('appTitle')}</h1>
+          <div className="lang-toggle" role="group" aria-label="Language">
+            <button
+              type="button"
+              className={`lang-btn ${lang === 'pt' ? 'active' : ''}`}
+              onClick={() => setLang('pt')}
+            >
+              PT
+            </button>
+            <button
+              type="button"
+              className={`lang-btn ${lang === 'en' ? 'active' : ''}`}
+              onClick={() => setLang('en')}
+            >
+              EN
+            </button>
+          </div>
+        </div>
+        <p className="subtitle">{t('subtitle')}</p>
         {photos.length > 0 && (
-          <p className="persist-hint">As fotos ficam guardadas neste browser</p>
+          <p className="persist-hint">{t('persistHint')}</p>
         )}
       </header>
 
@@ -109,14 +136,14 @@ function App() {
           className={`menu-btn ${activeTab === 'entrada' ? 'active' : ''}`}
           onClick={() => setActiveTab('entrada')}
         >
-          📷 Entrada de Fotos
+          📷 {t('tabEntry')}
         </button>
         <button
           type="button"
           className={`menu-btn ${activeTab === 'lista' ? 'active' : ''}`}
           onClick={() => setActiveTab('lista')}
         >
-          🖼️ Lista de Fotos
+          🖼️ {t('tabList')}
           {photos.length > 0 && <span className="badge">{photos.length}</span>}
         </button>
       </nav>
@@ -131,6 +158,7 @@ function App() {
               onToggleSelect={handleToggleSelect}
               onRemove={handleRemove}
               onSelectAll={handleSelectAll}
+              onClearAll={handleClearAll}
             />
             <PrintPanel photos={photos} />
           </>

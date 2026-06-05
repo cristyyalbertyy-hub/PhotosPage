@@ -9,10 +9,49 @@
   margin-bottom: 32px;
 }
 
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 .app-header h1 {
   font-size: 2rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.lang-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  padding: 4px;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.lang-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  transition: background 0.15s, color 0.15s;
+}
+
+.lang-btn:hover {
+  background: var(--bg);
+}
+
+.lang-btn.active {
+  background: var(--accent);
+  color: white;
 }
 
 .subtitle {
@@ -289,6 +328,23 @@ section h2 {
 .btn-select-all:hover {
   border-color: var(--accent);
   background: var(--accent-light);
+}
+
+.btn-clear-all {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border: 2px solid var(--danger);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--danger);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-clear-all:hover {
+  background: var(--danger);
+  color: white;
 }
 
 .list-actions {
@@ -602,6 +658,75 @@ section h2 {
   font-size: 1.2rem;
 }
 
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.confirm-dialog {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.confirm-dialog h3 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.confirm-dialog p {
+  margin: 0 0 20px;
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.btn-confirm-cancel {
+  padding: 10px 16px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-h);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.btn-confirm-cancel:hover {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.btn-confirm-danger {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--danger);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.btn-confirm-danger:hover {
+  filter: brightness(0.9);
+}
+
 @media (max-width: 600px) {
   .app-header h1 {
     font-size: 1.5rem;
@@ -621,8 +746,9 @@ section h2 {
     width: 100%;
   }
 
-  .btn-select-all {
-    width: 100%;
+  .btn-select-all,
+  .btn-clear-all {
+    flex: 1;
     text-align: center;
   }
 

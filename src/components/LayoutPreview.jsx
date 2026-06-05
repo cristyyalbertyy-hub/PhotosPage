@@ -1,15 +1,22 @@
+import { useLanguage } from '../i18n/LanguageContext'
 import { getSlotsForPage, LAYOUT_META } from '../utils/pdfLayouts'
 
-export default function LayoutPreview({ photosPerPage, photoCount, orientation = 'portrait' }) {
+export default function LayoutPreview({
+  photosPerPage,
+  photoCount,
+  orientation = 'portrait',
+}) {
+  const { layoutLabel, orientationShort } = useLanguage()
   const layout = LAYOUT_META[photosPerPage]
   const countOnPage = Math.min(photoCount || photosPerPage, photosPerPage)
   const slots = getSlotsForPage(photosPerPage, countOnPage)
   const isLandscape = orientation === 'landscape'
+  const orientationLabel = orientationShort[orientation]
 
   return (
     <div className="layout-preview">
       <p className="layout-label">
-        {layout.label} — {isLandscape ? 'paisagem' : 'retrato'}
+        {layoutLabel(photosPerPage)} — {orientationLabel}
       </p>
       <div
         className={`layout-page ${isLandscape ? 'layout-page--landscape' : ''}`}

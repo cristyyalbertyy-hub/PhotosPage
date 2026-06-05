@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import { generatePdf } from '../utils/pdfGenerator'
 import LayoutPreview from './LayoutPreview'
 
 export default function PrintPanel({ photos }) {
+  const { t } = useLanguage()
   const [photosPerPage, setPhotosPerPage] = useState(4)
   const [orientation, setOrientation] = useState('portrait')
   const [filename, setFilename] = useState('fotos')
@@ -14,7 +16,7 @@ export default function PrintPanel({ photos }) {
   async function handlePrint() {
     setError('')
     if (selectedPhotos.length === 0) {
-      setError('Selecione pelo menos uma foto para imprimir')
+      setError(t('noPhotosSelected'))
       return
     }
 
@@ -27,7 +29,11 @@ export default function PrintPanel({ photos }) {
         orientation,
       )
     } catch (err) {
-      setError(err.message || 'Erro ao gerar PDF')
+      if (err.message === 'NO_PHOTOS_SELECTED') {
+        setError(t('noPhotosSelected'))
+      } else {
+        setError(t('pdfError'))
+      }
     } finally {
       setPrinting(false)
     }
@@ -43,13 +49,13 @@ export default function PrintPanel({ photos }) {
         <span className="printer-icon" aria-hidden="true">
           🖨️
         </span>
-        <h2>Imprimir</h2>
+        <h2>{t('printTitle')}</h2>
       </div>
-      <p className="section-desc">Guardar as fotos selecionadas num ficheiro PDF</p>
+      <p className="section-desc">{t('printDesc')}</p>
 
       <div className="print-controls">
         <label className="control-group">
-          <span>Orientação da página</span>
+          <span>{t('orientation')}</span>
           <div className="orientation-options">
             <button
               type="button"
@@ -59,23 +65,26 @@ export default function PrintPanel({ photos }) {
               <span className="orientation-icon" aria-hidden="true">
                 ▯
               </span>
-              Retrato
+              {t('portrait')}
             </button>
             <button
               type="button"
               className={`orientation-btn ${orientation === 'landscape' ? 'active' : ''}`}
               onClick={() => setOrientation('landscape')}
             >
-              <span className="orientation-icon orientation-icon--landscape" aria-hidden="true">
+              <span
+                className="orientation-icon orientation-icon--landscape"
+                aria-hidden="true"
+              >
                 ▭
               </span>
-              Paisagem
+              {t('landscape')}
             </button>
           </div>
         </label>
 
         <label className="control-group">
-          <span>Fotos por página</span>
+          <span>{t('photosPerPage')}</span>
           <div className="per-page-options">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
               <button
@@ -103,7 +112,7 @@ export default function PrintPanel({ photos }) {
         />
 
         <label className="control-group">
-          <span>Nome do ficheiro</span>
+          <span>{t('filename')}</span>
           <div className="filename-input">
             <input
               type="text"
@@ -117,8 +126,7 @@ export default function PrintPanel({ photos }) {
 
         {selectedPhotos.length > 0 && (
           <p className="print-info">
-            {selectedPhotos.length} foto{selectedPhotos.length !== 1 ? 's' : ''} → {totalPages}{' '}
-            página{totalPages !== 1 ? 's' : ''}
+            {t('printSummary', selectedPhotos.length, totalPages)}
           </p>
         )}
 
@@ -133,7 +141,7 @@ export default function PrintPanel({ photos }) {
           <span className="printer-icon-sm" aria-hidden="true">
             🖨️
           </span>
-          {printing ? 'A gerar PDF...' : 'Guardar PDF'}
+          {printing ? t('generatingPdf') : t('savePdf')}
         </button>
       </div>
     </section>

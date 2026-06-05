@@ -49,7 +49,7 @@ export async function generatePdf(
   orientation = 'portrait',
 ) {
   if (photoUrls.length === 0) {
-    throw new Error('Nenhuma foto selecionada')
+    throw new Error('NO_PHOTOS_SELECTED')
   }
 
   const layout = LAYOUT_META[photosPerPage]

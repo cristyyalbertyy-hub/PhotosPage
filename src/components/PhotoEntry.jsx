@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 
 function createPendingItem(file) {
   return {
@@ -10,6 +11,7 @@ function createPendingItem(file) {
 }
 
 export default function PhotoEntry({ onAddMany }) {
+  const { t } = useLanguage()
   const inputRef = useRef(null)
   const [pending, setPending] = useState([])
   const [addedHint, setAddedHint] = useState('')
@@ -49,24 +51,19 @@ export default function PhotoEntry({ onAddMany }) {
   function handleAddAll() {
     if (pending.length === 0) return
 
+    const n = pending.length
     onAddMany(pending.map((p) => ({ blob: p.blob, name: p.name })))
     pending.forEach((p) => URL.revokeObjectURL(p.previewUrl))
     setPending([])
     if (inputRef.current) inputRef.current.value = ''
 
-    const n = pending.length
-    setAddedHint(
-      `${n} foto${n !== 1 ? 's' : ''} adicionada${n !== 1 ? 's' : ''} à coleção. Pode escolher mais.`,
-    )
+    setAddedHint(t('addedHint', n))
   }
 
   return (
     <section className="photo-entry">
-      <h2>Entrada de Fotos</h2>
-      <p className="section-desc">
-        Escolha uma ou várias imagens. Remova as que não quiser (✕) e depois adicione à
-        coleção.
-      </p>
+      <h2>{t('entryTitle')}</h2>
+      <p className="section-desc">{t('entryDesc')}</p>
 
       <div
         className="drop-zone"
@@ -76,7 +73,7 @@ export default function PhotoEntry({ onAddMany }) {
       >
         <div className="drop-placeholder">
           <span className="drop-icon">📷</span>
-          <span>Clique ou arraste imagens (pode escolher várias)</span>
+          <span>{t('dropHint')}</span>
         </div>
         <input
           ref={inputRef}
@@ -91,16 +88,13 @@ export default function PhotoEntry({ onAddMany }) {
       {pending.length > 0 && (
         <>
           <div className="pending-header">
-            <p className="pending-count">
-              {pending.length} foto{pending.length !== 1 ? 's' : ''} selecionada
-              {pending.length !== 1 ? 's' : ''}
-            </p>
+            <p className="pending-count">{t('pendingCount', pending.length)}</p>
             <button
               type="button"
               className="btn-clear-pending"
               onClick={clearPending}
             >
-              Limpar tudo
+              {t('clearPending')}
             </button>
           </div>
 
@@ -111,8 +105,8 @@ export default function PhotoEntry({ onAddMany }) {
                   type="button"
                   className="btn-remove"
                   onClick={() => removePending(item.id)}
-                  title="Remover desta seleção"
-                  aria-label="Remover desta seleção"
+                  title={t('removeFromSelection')}
+                  aria-label={t('removeFromSelection')}
                 >
                   ✕
                 </button>
@@ -131,12 +125,12 @@ export default function PhotoEntry({ onAddMany }) {
         className="btn-add"
         onClick={handleAddAll}
         disabled={pending.length === 0}
-        title="Adicionar fotos à coleção"
+        title={t('addToCollection')}
       >
         <span className="plus">+</span>
         {pending.length > 0
-          ? `Adicionar ${pending.length} foto${pending.length !== 1 ? 's' : ''}`
-          : 'Adicionar à coleção'}
+          ? t('addPhotos', pending.length)
+          : t('addToCollection')}
       </button>
     </section>
   )
