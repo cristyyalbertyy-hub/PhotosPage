@@ -6,8 +6,11 @@ export default function ConfirmDialog({
   cancelLabel,
   onConfirm,
   onCancel,
+  variant = 'confirm',
 }) {
   if (!open) return null
+
+  const isAlert = variant === 'alert'
 
   return (
     <div className="confirm-overlay" onClick={onCancel} role="presentation">
@@ -21,11 +24,17 @@ export default function ConfirmDialog({
       >
         <h3 id="confirm-title">{title}</h3>
         <p id="confirm-message">{message}</p>
-        <div className="confirm-actions">
-          <button type="button" className="btn-confirm-cancel" onClick={onCancel}>
-            {cancelLabel}
-          </button>
-          <button type="button" className="btn-confirm-danger" onClick={onConfirm}>
+        <div className={`confirm-actions ${isAlert ? 'confirm-actions--single' : ''}`}>
+          {!isAlert && (
+            <button type="button" className="btn-confirm-cancel" onClick={onCancel}>
+              {cancelLabel}
+            </button>
+          )}
+          <button
+            type="button"
+            className={isAlert ? 'btn-confirm-primary' : 'btn-confirm-danger'}
+            onClick={isAlert ? onCancel : onConfirm}
+          >
             {confirmLabel}
           </button>
         </div>

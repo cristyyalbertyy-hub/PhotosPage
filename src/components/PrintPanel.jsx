@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import ConfirmDialog from './ConfirmDialog'
 import { useLanguage } from '../i18n/LanguageContext'
 import { estimatePdfSize, formatBytes, generatePdf } from '../utils/pdfGenerator'
 import LayoutPreview from './LayoutPreview'
@@ -15,6 +16,7 @@ export default function PrintPanel({ photos }) {
   const [error, setError] = useState('')
   const [estimate, setEstimate] = useState(null)
   const [estimating, setEstimating] = useState(false)
+  const [noSelectionAlert, setNoSelectionAlert] = useState(false)
 
   const selectedPhotos = useMemo(
     () => photos.filter((p) => p.selected),
@@ -70,13 +72,18 @@ export default function PrintPanel({ photos }) {
     if (estimate?.partCount > 1) setDownloadAsZip(true)
   }, [estimate?.partCount])
 
+  function handleSaveClick() {
+    if (selectedPhotos.length === 0) {
+      setNoSelectionAlert(true)
+      return
+    }
+    handlePrint()
+  }
+
   async function handlePrint() {
     setError('')
     setProgress(null)
-    if (selectedPhotos.length === 0) {
-      setError(t('noPhotosSelected'))
-      return
-    }
+    if (selectedPhotos.length === 0) return
 
     setPrinting(true)
     try {
@@ -267,9 +274,10 @@ export default function PrintPanel({ photos }) {
 
         <button
           type="button"
-          className="btn-print"
-          onClick={handlePrint}
-          disabled={printing || selectedPhotos.length === 0 || estimating}
+          className={`btn-print ${selectedPhotos.length === 0 && !printing ? 'btn-print--inactive' : ''}`}
+          onClick={handleSaveClick}
+          disabled={printing || estimating}
+          aria-disabled={selectedPhotos.length === 0}
         >
           <span className="printer-icon-sm" aria-hidden="true">
             🖨️
@@ -277,6 +285,15 @@ export default function PrintPanel({ photos }) {
           {printing ? renderProgressLabel() : t('savePdf')}
         </button>
       </div>
+
+      <ConfirmDialog
+        open={noSelectionAlert}
+        variant="alert"
+        title={t('selectPhotosAlertTitle')}
+        message={t('selectPhotosAlertMessage')}
+        confirmLabel={t('selectPhotosAlertOk')}
+        onCancel={() => setNoSelectionAlert(false)}
+      />
     </section>
   )
 }

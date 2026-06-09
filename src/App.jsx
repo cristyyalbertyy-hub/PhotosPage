@@ -91,6 +91,44 @@ function App() {
     setPhotos([])
   }
 
+  async function handleReorder(fromId, toId) {
+    let reordered = null
+
+    setPhotos((prev) => {
+      const fromIndex = prev.findIndex((p) => p.id === fromId)
+      const toIndex = prev.findIndex((p) => p.id === toId)
+      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+        return prev
+      }
+
+      const next = [...prev]
+      const [moved] = next.splice(fromIndex, 1)
+      next.splice(toIndex, 0, moved)
+      reordered = next.map((p, i) => ({ ...p, sortOrder: i }))
+      return reordered
+    })
+
+    if (reordered) await savePhotoOrder(reordered)
+  }
+
+  async function handleRemoveSelected(ids) {
+    if (ids.length === 0) return
+
+    const idSet = new Set(ids)
+    let reordered = []
+
+    setPhotos((prev) => {
+      prev.filter((p) => idSet.has(p.id)).forEach((p) => URL.revokeObjectURL(p.url))
+      reordered = prev
+        .filter((p) => !idSet.has(p.id))
+        .map((p, i) => ({ ...p, sortOrder: i }))
+      return reordered
+    })
+
+    await Promise.all(ids.map((id) => deletePhoto(id)))
+    await savePhotoOrder(reordered)
+  }
+
   if (loading) {
     return (
       <div className="app">
@@ -159,6 +197,8 @@ function App() {
               onRemove={handleRemove}
               onSelectAll={handleSelectAll}
               onClearAll={handleClearAll}
+              onRemoveSelected={handleRemoveSelected}
+              onReorder={handleReorder}
             />
             <PrintPanel photos={photos} />
           </>

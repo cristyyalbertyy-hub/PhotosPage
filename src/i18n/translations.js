@@ -21,7 +21,9 @@ export const translations = {
     listTitle: 'Lista de Fotos',
     listEmpty: 'Ainda não há fotos. Adicione na secção de entrada.',
     selectedOf: (n, total) =>
-      `${n} de ${total} selecionada${n !== 1 ? 's' : ''} — ordem de adição`,
+      `${n} de ${total} selecionada${n !== 1 ? 's' : ''}`,
+    dragToReorder: 'Arraste as fotos para definir a ordem do álbum',
+    dragHandle: 'Arrastar para reordenar',
     selectAll: 'Selecionar todas',
     deselectAll: 'Desselecionar todas',
     removePhoto: 'Remover foto',
@@ -33,6 +35,16 @@ export const translations = {
       'Esta ação remove todas as fotos da coleção. Não pode ser desfeita.',
     confirmYes: 'Sim, limpar tudo',
     confirmNo: 'Cancelar',
+    removeSelected: 'Apagar selecionadas',
+    confirmRemoveSelectedTitle: (n) =>
+      `Apagar ${n} foto${n !== 1 ? 's' : ''} selecionada${n !== 1 ? 's' : ''}?`,
+    confirmRemoveSelectedMessage:
+      'As fotos selecionadas serão removidas da coleção. Não pode ser desfeito.',
+    confirmRemoveSelectedYes: 'Sim, apagar',
+    selectPhotosAlertTitle: 'Nenhuma foto selecionada',
+    selectPhotosAlertMessage:
+      'Selecione pelo menos uma foto na lista (✓) antes de guardar o PDF.',
+    selectPhotosAlertOk: 'Entendi',
     printTitle: 'Imprimir',
     printDesc: 'Guardar as fotos selecionadas num ficheiro PDF',
     quality: 'Qualidade',
@@ -92,8 +104,9 @@ export const translations = {
       `${n} photo${n !== 1 ? 's' : ''} added to the collection. You can choose more.`,
     listTitle: 'Photo List',
     listEmpty: 'No photos yet. Add some in the entry section.',
-    selectedOf: (n, total) =>
-      `${n} of ${total} selected — order added`,
+    selectedOf: (n, total) => `${n} of ${total} selected`,
+    dragToReorder: 'Drag photos to set the album order',
+    dragHandle: 'Drag to reorder',
     selectAll: 'Select all',
     deselectAll: 'Deselect all',
     removePhoto: 'Remove photo',
@@ -105,6 +118,16 @@ export const translations = {
       'This will remove all photos from the collection. This cannot be undone.',
     confirmYes: 'Yes, clear all',
     confirmNo: 'Cancel',
+    removeSelected: 'Delete selected',
+    confirmRemoveSelectedTitle: (n) =>
+      `Delete ${n} selected photo${n !== 1 ? 's' : ''}?`,
+    confirmRemoveSelectedMessage:
+      'Selected photos will be removed from the collection. This cannot be undone.',
+    confirmRemoveSelectedYes: 'Yes, delete',
+    selectPhotosAlertTitle: 'No photos selected',
+    selectPhotosAlertMessage:
+      'Select at least one photo in the list (✓) before saving the PDF.',
+    selectPhotosAlertOk: 'Got it',
     printTitle: 'Print',
     printDesc: 'Save selected photos to a PDF file',
     quality: 'Quality',

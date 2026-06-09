@@ -313,6 +313,13 @@ section h2 {
   margin-bottom: 0;
 }
 
+.drag-hint {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--accent);
+  font-weight: 500;
+}
+
 .btn-select-all {
   flex-shrink: 0;
   padding: 8px 14px;
@@ -347,6 +354,28 @@ section h2 {
   color: white;
 }
 
+.btn-remove-selected {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-h);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: border-color 0.15s, background 0.15s, color 0.15s, opacity 0.15s;
+}
+
+.btn-remove-selected:hover:not(:disabled) {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.btn-remove-selected:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .list-actions {
   display: flex;
   flex-shrink: 0;
@@ -365,12 +394,69 @@ section h2 {
   border-radius: 8px;
   overflow: hidden;
   border: 2px solid var(--border);
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s, transform 0.15s;
+  cursor: grab;
+}
+
+.photo-card:active {
+  cursor: grabbing;
+}
+
+.photo-card.dragging {
+  opacity: 0.45;
+  transform: scale(0.96);
+}
+
+.photo-card.drop-target {
+  border-color: var(--accent);
+  border-style: dashed;
+  box-shadow: 0 0 0 3px var(--accent-light);
 }
 
 .photo-card.selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.photo-card.selected.drop-target {
+  border-style: dashed;
+}
+
+.order-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.drag-handle {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.45);
+  color: white;
+  font-size: 1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .photo-card img {
@@ -700,6 +786,15 @@ section h2 {
   cursor: not-allowed;
 }
 
+.btn-print--inactive {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-print--inactive:not(:disabled) {
+  cursor: pointer;
+}
+
 .printer-icon-sm {
   font-size: 1.2rem;
 }
@@ -773,6 +868,24 @@ section h2 {
   filter: brightness(0.9);
 }
 
+.confirm-actions--single {
+  justify-content: center;
+}
+
+.btn-confirm-primary {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.btn-confirm-primary:hover {
+  background: var(--accent-hover);
+}
+
 @media (max-width: 600px) {
   .app-header h1 {
     font-size: 1.5rem;
@@ -793,6 +906,7 @@ section h2 {
   }
 
   .btn-select-all,
+  .btn-remove-selected,
   .btn-clear-all {
     flex: 1;
     text-align: center;
