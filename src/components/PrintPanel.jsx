@@ -1,8 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import ConfirmDialog from './ConfirmDialog'
 import { useLanguage } from '../i18n/LanguageContext'
-import { estimatePdfSize, formatBytes, generatePdf } from '../utils/pdfGenerator'
+import {
+  getSavedRecipient,
+  saveRecipient,
+  sendPdfByEmail,
+} from '../utils/emailShare'
+import {
+  buildPdfFiles,
+  estimatePdfSize,
+  formatBytes,
+  generatePdf,
+} from '../utils/pdfGenerator'
 import LayoutPreview from './LayoutPreview'
+
+const EMAIL_MESSAGE_KEY = 'photosPage-email-message'
 
 export default function PrintPanel({ photos }) {
   const { lang, t } = useLanguage()
@@ -17,6 +29,12 @@ export default function PrintPanel({ photos }) {
   const [estimate, setEstimate] = useState(null)
   const [estimating, setEstimating] = useState(false)
   const [noSelectionAlert, setNoSelectionAlert] = useState(false)
+  const [recipient, setRecipient] = useState(() => getSavedRecipient())
+  const [emailMessage, setEmailMessage] = useState(
+    () => localStorage.getItem(EMAIL_MESSAGE_KEY) || '',
+  )
+  const [sendingEmail, setSendingEmail] = useState(false)
+  const [emailInfo, setEmailInfo] = useState('')
 
   const selectedPhotos = useMemo(
     () => photos.filter((p) => p.selected),
@@ -72,12 +90,82 @@ export default function PrintPanel({ photos }) {
     if (estimate?.partCount > 1) setDownloadAsZip(true)
   }, [estimate?.partCount])
 
+  function handleNoSelection() {
+    setNoSelectionAlert(true)
+  }
+
   function handleSaveClick() {
     if (selectedPhotos.length === 0) {
-      setNoSelectionAlert(true)
+      handleNoSelection()
       return
     }
     handlePrint()
+  }
+
+  async function handleSendEmail() {
+    setError('')
+    setEmailInfo('')
+
+    if (selectedPhotos.length === 0) {
+      handleNoSelection()
+      return
+    }
+
+    if (!recipient.trim()) {
+      setError(t('emailNoRecipient'))
+      return
+    }
+
+    setSendingEmail(true)
+    setProgress(null)
+
+    try {
+      saveRecipient(recipient)
+      localStorage.setItem(EMAIL_MESSAGE_KEY, emailMessage)
+
+      const result = await buildPdfFiles({
+        photoUrls: selectedUrls,
+        photosPerPage,
+        filename,
+        orientation,
+        quality,
+        onProgress: ({ current, total }) => {
+          setProgress({ current, total })
+        },
+      })
+
+      const body = emailMessage.trim() || t('emailBodyDefault')
+
+      const sendResult = await sendPdfByEmail({
+        files: result.files,
+        safeName: result.safeName,
+        recipient,
+        subject: t('emailSubject', result.safeName),
+        body,
+        attachHint: t('emailAttachHint'),
+      })
+
+      setEmailInfo(
+        sendResult.method === 'share'
+          ? t('emailSuccessShare')
+          : t('emailSuccessMailto'),
+      )
+    } catch (err) {
+      if (err.message === 'NO_RECIPIENT') {
+        setError(t('emailNoRecipient'))
+      } else if (err.message === 'INVALID_EMAIL') {
+        setError(t('emailInvalid'))
+      } else if (err.message === 'SHARE_CANCELLED') {
+        setEmailInfo(t('emailCancelled'))
+      } else if (err.message === 'NO_PHOTOS_SELECTED') {
+        handleNoSelection()
+      } else {
+        setError(t('pdfError'))
+      }
+    } finally {
+      setSendingEmail(false)
+      setProgress(null)
+    }
   }
 
   async function handlePrint() {
@@ -138,12 +226,16 @@ export default function PrintPanel({ photos }) {
   }
 
   function renderProgressLabel() {
-    if (!progress) return t('generatingPdf')
+    if (!progress) {
+      return sendingEmail ? t('sendingEmail') : t('generatingPdf')
+    }
     if (progress.total > 1) {
       return t('generatingPart', progress.current, progress.total)
     }
-    return t('generatingPdf')
+    return sendingEmail ? t('sendingEmail') : t('generatingPdf')
   }
+
+  const isBusy = printing || sendingEmail
 
   return (
     <section className="print-panel">
@@ -271,12 +363,13 @@ export default function PrintPanel({ photos }) {
         )}
 
         {error && <p className="print-error">{error}</p>}
+        {emailInfo && <p className="print-info email-info">{emailInfo}</p>}
 
         <button
           type="button"
-          className={`btn-print ${selectedPhotos.length === 0 && !printing ? 'btn-print--inactive' : ''}`}
+          className={`btn-print ${selectedPhotos.length === 0 && !isBusy ? 'btn-print--inactive' : ''}`}
           onClick={handleSaveClick}
-          disabled={printing || estimating}
+          disabled={isBusy || estimating}
           aria-disabled={selectedPhotos.length === 0}
         >
           <span className="printer-icon-sm" aria-hidden="true">
@@ -284,6 +377,44 @@ export default function PrintPanel({ photos }) {
           </span>
           {printing ? renderProgressLabel() : t('savePdf')}
         </button>
+
+        <div className="email-section">
+          <h3 className="email-section-title">{t('emailSection')}</h3>
+          <p className="control-hint">{t('emailHint')}</p>
+
+          <label className="control-group">
+            <span>{t('emailRecipient')}</span>
+            <input
+              type="email"
+              className="email-input"
+              value={recipient}
+              onChange={(e) => setRecipient(e.target.value)}
+              placeholder={t('emailRecipientPlaceholder')}
+            />
+          </label>
+
+          <label className="control-group">
+            <span>{t('emailMessage')}</span>
+            <textarea
+              className="email-textarea"
+              value={emailMessage}
+              onChange={(e) => setEmailMessage(e.target.value)}
+              placeholder={t('emailMessagePlaceholder')}
+              rows={3}
+            />
+          </label>
+
+          <button
+            type="button"
+            className={`btn-email ${selectedPhotos.length === 0 && !isBusy ? 'btn-print--inactive' : ''}`}
+            onClick={handleSendEmail}
+            disabled={isBusy || estimating}
+            aria-disabled={selectedPhotos.length === 0}
+          >
+            <span aria-hidden="true">✉️</span>
+            {sendingEmail ? renderProgressLabel() : t('sendEmail')}
+          </button>
+        </div>
       </div>
 
       <ConfirmDialog

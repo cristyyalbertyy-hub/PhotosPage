@@ -186,7 +186,7 @@ async function buildPdfBlob(photoUrls, photosPerPage, orientation, profile) {
   return pdf.output('blob')
 }
 
-function downloadBlob(blob, filename) {
+export function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -195,22 +195,26 @@ function downloadBlob(blob, filename) {
   URL.revokeObjectURL(url)
 }
 
-async function downloadZip(files, zipName) {
+export async function createZipBlob(files) {
   const entries = {}
   for (const { name, blob } of files) {
     entries[name] = new Uint8Array(await blob.arrayBuffer())
   }
   const zipped = zipSync(entries)
-  downloadBlob(new Blob([zipped], { type: 'application/zip' }), zipName)
+  return new Blob([zipped], { type: 'application/zip' })
 }
 
-export async function generatePdf({
+async function downloadZip(files, zipName) {
+  const zipBlob = await createZipBlob(files)
+  downloadBlob(zipBlob, zipName)
+}
+
+export async function buildPdfFiles({
   photoUrls,
   photosPerPage,
   filename,
   orientation = 'portrait',
   quality = 'email',
-  downloadAsZip = false,
   onProgress,
 }) {
   if (photoUrls.length === 0) {
@@ -225,28 +229,58 @@ export async function generatePdf({
     ? splitPhotoUrls(photoUrls, photosPerPage, orientation, quality, estimate.partCount)
     : [photoUrls]
 
-  const pdfFiles = []
+  const files = []
   for (let i = 0; i < parts.length; i++) {
     onProgress?.({ current: i + 1, total: parts.length })
     const blob = await buildPdfBlob(parts[i], photosPerPage, orientation, profile)
     const partName =
       parts.length === 1 ? `${safeName}.pdf` : `${safeName}_parte${i + 1}.pdf`
-    pdfFiles.push({ name: partName, blob })
+    files.push({ name: partName, blob })
   }
 
-  if (pdfFiles.length === 1) {
-    downloadBlob(pdfFiles[0].blob, pdfFiles[0].name)
+  return {
+    files,
+    safeName,
+    partCount: files.length,
+    totalBytes: estimate.totalBytes,
+    split: files.length > 1,
+    fitsEmail: estimate.fitsEmail,
+  }
+}
+
+export async function generatePdf({
+  photoUrls,
+  photosPerPage,
+  filename,
+  orientation = 'portrait',
+  quality = 'email',
+  downloadAsZip = false,
+  onProgress,
+}) {
+  const result = await buildPdfFiles({
+    photoUrls,
+    photosPerPage,
+    filename,
+    orientation,
+    quality,
+    onProgress,
+  })
+
+  const { files, safeName } = result
+
+  if (files.length === 1) {
+    downloadBlob(files[0].blob, files[0].name)
   } else if (downloadAsZip) {
-    downloadZip(pdfFiles, `${safeName}.zip`)
+    await downloadZip(files, `${safeName}.zip`)
   } else {
-    for (const file of pdfFiles) {
+    for (const file of files) {
       downloadBlob(file.blob, file.name)
     }
   }
 
   return {
-    partCount: pdfFiles.length,
-    totalBytes: estimate.totalBytes,
-    split: pdfFiles.length > 1,
+    partCount: result.partCount,
+    totalBytes: result.totalBytes,
+    split: result.split,
   }
 }

@@ -795,6 +795,77 @@ section h2 {
   cursor: pointer;
 }
 
+.email-section {
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.email-section-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.email-input,
+.email-textarea {
+  width: 100%;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--text-h);
+  background: transparent;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.email-input:focus,
+.email-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.email-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.btn-email {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s, opacity 0.15s;
+}
+
+.btn-email:hover:not(:disabled) {
+  background: var(--accent);
+  color: white;
+}
+
+.btn-email:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.email-info {
+  background: rgba(59, 130, 246, 0.1);
+  color: #1d4ed8;
+}
+
 .printer-icon-sm {
   font-size: 1.2rem;
 }
