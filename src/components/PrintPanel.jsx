@@ -19,13 +19,22 @@ import LayoutPreview from './LayoutPreview'
 const EMAIL_MESSAGE_KEY = 'photosPage-email-message'
 const EMPTY_PAGES = new Set()
 
-export default function PrintPanel({ photos }) {
+export default function PrintPanel({
+  photos,
+  album,
+  onUpdateAlbum,
+  onMoveToPage,
+  onReorderPhotos,
+  onRotatePhoto,
+  onCaptionChange,
+  onSetCover,
+}) {
   const { lang, t } = useLanguage()
-  const [photosPerPage, setPhotosPerPage] = useState(4)
-  const [orientation, setOrientation] = useState('portrait')
-  const [layoutMode, setLayoutMode] = useState('fill')
-  const [filename, setFilename] = useState(lang === 'en' ? 'photos' : 'fotos')
-  const [quality, setQuality] = useState('email')
+  const photosPerPage = album.photosPerPage
+  const orientation = album.orientation
+  const layoutMode = album.layoutMode
+  const filename = album.filename
+  const quality = album.quality
   const [downloadAsZip, setDownloadAsZip] = useState(true)
   const [printing, setPrinting] = useState(false)
   const [progress, setProgress] = useState(null)
@@ -39,7 +48,6 @@ export default function PrintPanel({ photos }) {
   )
   const [sendingEmail, setSendingEmail] = useState(false)
   const [emailInfo, setEmailInfo] = useState('')
-  const [excludeState, setExcludeState] = useState({ key: '', pages: new Set() })
   const [noPagesAlert, setNoPagesAlert] = useState(false)
 
   const selectedPhotos = useMemo(
@@ -48,7 +56,7 @@ export default function PrintPanel({ photos }) {
   )
   const pageKey = `${photosPerPage}:${selectedPhotos.map((p) => p.id).join(',')}`
   const excludedPages =
-    excludeState.key === pageKey ? excludeState.pages : EMPTY_PAGES
+    album.excludedKey === pageKey ? new Set(album.excludedPages) : EMPTY_PAGES
   const includedPhotos = useMemo(
     () =>
       selectedPhotos.filter((_, index) => {
@@ -57,33 +65,54 @@ export default function PrintPanel({ photos }) {
       }),
     [selectedPhotos, photosPerPage, excludedPages],
   )
-  const selectedUrls = useMemo(
-    () => includedPhotos.map((p) => p.url),
+  const photoItems = useMemo(
+    () =>
+      includedPhotos.map((photo) => ({
+        url: photo.url,
+        rotation: photo.rotation || 0,
+        caption: photo.caption || '',
+      })),
     [includedPhotos],
   )
+  const coverPhoto =
+    selectedPhotos.find((photo) => photo.id === album.coverPhotoId) ||
+    selectedPhotos[0] ||
+    null
+  const cover = useMemo(
+    () =>
+      album.includeCover
+        ? {
+            enabled: true,
+            title: album.title,
+            date: album.date,
+            url: coverPhoto?.url,
+            rotation: coverPhoto?.rotation || 0,
+          }
+        : null,
+    [
+      album.includeCover,
+      album.title,
+      album.date,
+      coverPhoto?.url,
+      coverPhoto?.rotation,
+    ],
+  )
   const aspects = usePhotoAspects(selectedPhotos)
+  const canExport = includedPhotos.length > 0 || album.includeCover
 
   function togglePageIncluded(pageIndex) {
-    setExcludeState((prev) => {
-      const current = prev.key === pageKey ? prev.pages : new Set()
-      const next = new Set(current)
-      if (next.has(pageIndex)) next.delete(pageIndex)
-      else next.add(pageIndex)
-      return { key: pageKey, pages: next }
+    const current =
+      album.excludedKey === pageKey ? new Set(album.excludedPages) : new Set()
+    if (current.has(pageIndex)) current.delete(pageIndex)
+    else current.add(pageIndex)
+    onUpdateAlbum({
+      excludedKey: pageKey,
+      excludedPages: [...current],
     })
   }
 
   useEffect(() => {
-    setFilename((prev) => {
-      if (prev === 'fotos' || prev === 'photos') {
-        return lang === 'en' ? 'photos' : 'fotos'
-      }
-      return prev
-    })
-  }, [lang])
-
-  useEffect(() => {
-    if (selectedUrls.length === 0) {
+    if (photoItems.length === 0 && !cover?.enabled) {
       setEstimate(null)
       setEstimating(false)
       return
@@ -95,11 +124,13 @@ export default function PrintPanel({ photos }) {
     const timer = setTimeout(async () => {
       try {
         const result = await estimatePdfSize(
-          selectedUrls,
+          null,
           photosPerPage,
           orientation,
           quality,
           layoutMode,
+          photoItems,
+          cover,
         )
         if (!cancelled) setEstimate(result)
       } catch {
@@ -113,7 +144,7 @@ export default function PrintPanel({ photos }) {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [selectedUrls, photosPerPage, orientation, quality, layoutMode])
+  }, [photoItems, photosPerPage, orientation, quality, layoutMode, cover])
 
   useEffect(() => {
     if (estimate?.partCount > 1) setDownloadAsZip(true)
@@ -128,7 +159,7 @@ export default function PrintPanel({ photos }) {
       handleNoSelection()
       return
     }
-    if (includedPhotos.length === 0) {
+    if (!canExport) {
       setNoPagesAlert(true)
       return
     }
@@ -144,7 +175,7 @@ export default function PrintPanel({ photos }) {
       return
     }
 
-    if (includedPhotos.length === 0) {
+    if (!canExport) {
       setNoPagesAlert(true)
       return
     }
@@ -162,12 +193,13 @@ export default function PrintPanel({ photos }) {
       localStorage.setItem(EMAIL_MESSAGE_KEY, emailMessage)
 
       const result = await buildPdfFiles({
-        photoUrls: selectedUrls,
+        photoItems,
         photosPerPage,
         filename,
         orientation,
         quality,
         layoutMode,
+        cover,
         onProgress: ({ current, total }) => {
           setProgress({ current, total })
         },
@@ -210,17 +242,18 @@ export default function PrintPanel({ photos }) {
   async function handlePrint() {
     setError('')
     setProgress(null)
-    if (selectedPhotos.length === 0 || includedPhotos.length === 0) return
+    if (selectedPhotos.length === 0 || !canExport) return
 
     setPrinting(true)
     try {
       await generatePdf({
-        photoUrls: selectedUrls,
+        photoItems,
         photosPerPage,
         filename,
         orientation,
         quality,
         layoutMode,
+        cover,
         downloadAsZip: estimate?.partCount > 1 && downloadAsZip,
         onProgress: ({ current, total }) => {
           setProgress({ current, total })
@@ -293,7 +326,7 @@ export default function PrintPanel({ photos }) {
             <button
               type="button"
               className={`orientation-btn ${orientation === 'portrait' ? 'active' : ''}`}
-              onClick={() => setOrientation('portrait')}
+              onClick={() => onUpdateAlbum({ orientation: 'portrait' })}
             >
               <span className="orientation-icon" aria-hidden="true">
                 ▯
@@ -303,7 +336,7 @@ export default function PrintPanel({ photos }) {
             <button
               type="button"
               className={`orientation-btn ${orientation === 'landscape' ? 'active' : ''}`}
-              onClick={() => setOrientation('landscape')}
+              onClick={() => onUpdateAlbum({ orientation: 'landscape' })}
             >
               <span
                 className="orientation-icon orientation-icon--landscape"
@@ -324,7 +357,7 @@ export default function PrintPanel({ photos }) {
                 key={n}
                 type="button"
                 className={`per-page-btn ${photosPerPage === n ? 'active' : ''}`}
-                onClick={() => setPhotosPerPage(n)}
+                onClick={() => onUpdateAlbum({ photosPerPage: n })}
               >
                 {n}
               </button>
@@ -338,14 +371,14 @@ export default function PrintPanel({ photos }) {
             <button
               type="button"
               className={`orientation-btn ${layoutMode === 'fill' ? 'active' : ''}`}
-              onClick={() => setLayoutMode('fill')}
+              onClick={() => onUpdateAlbum({ layoutMode: 'fill' })}
             >
               {t('layoutModeFill')}
             </button>
             <button
               type="button"
               className={`orientation-btn ${layoutMode === 'grid' ? 'active' : ''}`}
-              onClick={() => setLayoutMode('grid')}
+              onClick={() => onUpdateAlbum({ layoutMode: 'grid' })}
             >
               {t('layoutModeGrid')}
             </button>
@@ -364,6 +397,13 @@ export default function PrintPanel({ photos }) {
             layoutMode={layoutMode}
             excludedPages={excludedPages}
             onTogglePage={togglePageIncluded}
+            album={album}
+            onUpdateAlbum={onUpdateAlbum}
+            onMoveToPage={onMoveToPage}
+            onReorderPhotos={onReorderPhotos}
+            onRotatePhoto={onRotatePhoto}
+            onCaptionChange={onCaptionChange}
+            onSetCover={onSetCover}
           />
         ) : (
           <div className="album-viewer album-viewer--empty">
@@ -382,7 +422,7 @@ export default function PrintPanel({ photos }) {
             <input
               type="text"
               value={filename}
-              onChange={(e) => setFilename(e.target.value)}
+              onChange={(e) => onUpdateAlbum({ filename: e.target.value })}
               placeholder={lang === 'en' ? 'photos' : 'fotos'}
             />
             <span className="extension">
@@ -410,14 +450,14 @@ export default function PrintPanel({ photos }) {
             <button
               type="button"
               className={`orientation-btn ${quality === 'email' ? 'active' : ''}`}
-              onClick={() => setQuality('email')}
+              onClick={() => onUpdateAlbum({ quality: 'email' })}
             >
               {t('qualityEmail')}
             </button>
             <button
               type="button"
               className={`orientation-btn ${quality === 'print' ? 'active' : ''}`}
-              onClick={() => setQuality('print')}
+              onClick={() => onUpdateAlbum({ quality: 'print' })}
             >
               {t('qualityPrint')}
             </button>
@@ -445,10 +485,10 @@ export default function PrintPanel({ photos }) {
 
         <button
           type="button"
-          className={`btn-print ${includedPhotos.length === 0 && !isBusy ? 'btn-print--inactive' : ''}`}
+          className={`btn-print ${!canExport && !isBusy ? 'btn-print--inactive' : ''}`}
           onClick={handleSaveClick}
           disabled={isBusy || estimating}
-          aria-disabled={includedPhotos.length === 0}
+          aria-disabled={!canExport}
         >
           <span className="printer-icon-sm" aria-hidden="true">
             🖨️
@@ -484,10 +524,10 @@ export default function PrintPanel({ photos }) {
 
           <button
             type="button"
-            className={`btn-email ${includedPhotos.length === 0 && !isBusy ? 'btn-print--inactive' : ''}`}
+            className={`btn-email ${!canExport && !isBusy ? 'btn-print--inactive' : ''}`}
             onClick={handleSendEmail}
             disabled={isBusy || estimating}
-            aria-disabled={includedPhotos.length === 0}
+            aria-disabled={!canExport}
           >
             <span aria-hidden="true">✉️</span>
             {sendingEmail ? renderProgressLabel() : t('sendEmail')}

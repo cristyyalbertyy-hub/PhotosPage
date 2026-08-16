@@ -10,6 +10,7 @@ export default function PhotoList({
   onClearAll,
   onRemoveSelected,
   onReorder,
+  onRotatePhoto,
 }) {
   const { t } = useLanguage()
   const [confirmClearOpen, setConfirmClearOpen] = useState(false)
@@ -150,7 +151,24 @@ export default function PhotoList({
               ✕
             </button>
 
-            <img src={photo.url} alt={photo.name} draggable={false} />
+            <img
+              src={photo.url}
+              alt={photo.name}
+              draggable={false}
+              style={{ transform: `rotate(${photo.rotation || 0}deg)` }}
+            />
+
+            {onRotatePhoto && (
+              <button
+                type="button"
+                className="btn-rotate"
+                onClick={() => onRotatePhoto(photo.id)}
+                title={t('rotatePhoto')}
+                aria-label={t('rotatePhoto')}
+              >
+                ↻
+              </button>
+            )}
 
             <button
               type="button"

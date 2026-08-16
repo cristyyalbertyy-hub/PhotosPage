@@ -1,30 +1,41 @@
 import { useEffect, useRef, useState } from 'react'
+import AlbumSwitcher from './components/AlbumSwitcher'
 import PhotoEntry from './components/PhotoEntry'
 import PhotoList from './components/PhotoList'
 import PrintPanel from './components/PrintPanel'
 import { useLanguage } from './i18n/LanguageContext'
 import {
-  clearAllPhotos,
+  clearAlbumPhotos,
+  createAlbumRecord,
+  deleteAlbumRecord,
   deletePhoto,
-  loadPhotos,
+  loadAlbumPhotos,
+  loadWorkspace,
+  saveAlbum,
   saveAllSelections,
   savePhoto,
   savePhotoOrder,
+  setCurrentAlbumId,
 } from './utils/photoStorage'
 import './App.css'
 
 function App() {
   const { lang, setLang, t } = useLanguage()
+  const [albums, setAlbums] = useState([])
+  const [currentAlbumId, setCurrentAlbumIdState] = useState(null)
   const [photos, setPhotos] = useState([])
   const [activeTab, setActiveTab] = useState('entrada')
   const [loading, setLoading] = useState(true)
   const photosRef = useRef([])
 
   photosRef.current = photos
+  const currentAlbum = albums.find((album) => album.id === currentAlbumId) || null
 
   useEffect(() => {
-    loadPhotos()
-      .then((loaded) => {
+    loadWorkspace(lang)
+      .then(({ albums: loadedAlbums, currentAlbumId: albumId, photos: loaded }) => {
+        setAlbums(loadedAlbums)
+        setCurrentAlbumIdState(albumId)
         setPhotos(loaded)
       })
       .catch(() => {})
@@ -35,18 +46,65 @@ function App() {
     }
   }, [])
 
+  async function switchAlbum(albumId) {
+    if (albumId === currentAlbumId) return
+    photosRef.current.forEach((p) => URL.revokeObjectURL(p.url))
+    setCurrentAlbumId(albumId)
+    setCurrentAlbumIdState(albumId)
+    const loaded = await loadAlbumPhotos(albumId)
+    setPhotos(loaded)
+  }
+
+  async function handleCreateAlbum() {
+    const index = albums.length + 1
+    const album = createAlbumRecord(
+      lang === 'en' ? `Album ${index}` : `Álbum ${index}`,
+      lang,
+    )
+    await saveAlbum(album)
+    setAlbums((prev) => [...prev, album])
+    await switchAlbum(album.id)
+  }
+
+  async function handleRenameAlbum(name) {
+    if (!currentAlbum) return
+    const updated = { ...currentAlbum, name }
+    setAlbums((prev) => prev.map((album) => (album.id === updated.id ? updated : album)))
+    await saveAlbum(updated)
+  }
+
+  async function handleDeleteAlbum() {
+    if (!currentAlbum || albums.length <= 1) return
+    const removedId = currentAlbum.id
+    photos.forEach((p) => URL.revokeObjectURL(p.url))
+    await deleteAlbumRecord(removedId)
+    const remaining = albums.filter((album) => album.id !== removedId)
+    setAlbums(remaining)
+    await switchAlbum(remaining[0].id)
+  }
+
+  async function handleUpdateAlbum(patch) {
+    if (!currentAlbum) return
+    const updated = { ...currentAlbum, ...patch, updatedAt: Date.now() }
+    setAlbums((prev) => prev.map((album) => (album.id === updated.id ? updated : album)))
+    await saveAlbum(updated)
+  }
+
   async function handleAddMany(items) {
-    if (items.length === 0) return
+    if (items.length === 0 || !currentAlbumId) return
 
     setPhotos((prev) => {
       const batch = items.map((item, i) => ({
         id: crypto.randomUUID(),
+        albumId: currentAlbumId,
         url: URL.createObjectURL(item.blob),
         name: item.name,
         selected: false,
         blob: item.blob,
         addedAt: Date.now() + i,
         sortOrder: prev.length + i,
+        rotation: 0,
+        caption: '',
       }))
       batch.forEach((p) => savePhoto(p))
       return [...prev, ...batch]
@@ -87,28 +145,69 @@ function App() {
 
   async function handleClearAll() {
     photos.forEach((p) => URL.revokeObjectURL(p.url))
-    await clearAllPhotos()
+    await clearAlbumPhotos(currentAlbumId)
     setPhotos([])
   }
 
+  async function persistReorder(next) {
+    const reordered = next.map((p, i) => ({ ...p, sortOrder: i }))
+    setPhotos(reordered)
+    await savePhotoOrder(reordered)
+  }
+
   async function handleReorder(fromId, toId) {
-    let reordered = null
+    const fromIndex = photos.findIndex((p) => p.id === fromId)
+    const toIndex = photos.findIndex((p) => p.id === toId)
+    if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return
 
-    setPhotos((prev) => {
-      const fromIndex = prev.findIndex((p) => p.id === fromId)
-      const toIndex = prev.findIndex((p) => p.id === toId)
-      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
-        return prev
-      }
+    const next = [...photos]
+    const [moved] = next.splice(fromIndex, 1)
+    next.splice(toIndex, 0, moved)
+    await persistReorder(next)
+  }
 
-      const next = [...prev]
-      const [moved] = next.splice(fromIndex, 1)
-      next.splice(toIndex, 0, moved)
-      reordered = next.map((p, i) => ({ ...p, sortOrder: i }))
-      return reordered
+  async function handleMoveToPage(photoId, targetPageIndex) {
+    const perPage = currentAlbum?.photosPerPage || 4
+    const selected = photos.filter((p) => p.selected)
+    const from = selected.findIndex((p) => p.id === photoId)
+    if (from === -1) return
+
+    const nextSelected = [...selected]
+    const [moved] = nextSelected.splice(from, 1)
+    let insertAt = Math.min(targetPageIndex * perPage, nextSelected.length)
+    if (from < insertAt) insertAt = Math.max(0, insertAt - 1)
+    nextSelected.splice(insertAt, 0, moved)
+
+    let selectedIndex = 0
+    const next = photos.map((photo) => {
+      if (!photo.selected) return photo
+      return nextSelected[selectedIndex++]
     })
+    await persistReorder(next)
+  }
 
-    if (reordered) await savePhotoOrder(reordered)
+  async function handleRotatePhoto(id) {
+    setPhotos((prev) => {
+      const updated = prev.map((p) =>
+        p.id === id ? { ...p, rotation: ((p.rotation || 0) + 90) % 360 } : p,
+      )
+      const photo = updated.find((p) => p.id === id)
+      if (photo) savePhoto(photo)
+      return updated
+    })
+  }
+
+  async function handleCaptionChange(id, caption) {
+    setPhotos((prev) => {
+      const updated = prev.map((p) => (p.id === id ? { ...p, caption } : p))
+      const photo = updated.find((p) => p.id === id)
+      if (photo) savePhoto(photo)
+      return updated
+    })
+  }
+
+  async function handleSetCover(photoId) {
+    await handleUpdateAlbum({ coverPhotoId: photoId })
   }
 
   async function handleRemoveSelected(ids) {
@@ -131,7 +230,7 @@ function App() {
 
   const selectedCount = photos.filter((p) => p.selected).length
 
-  if (loading) {
+  if (loading || !currentAlbum) {
     return (
       <div className="app">
         <div className="loading-state">
@@ -165,9 +264,15 @@ function App() {
           </div>
         </div>
         <p className="subtitle">{t('subtitle')}</p>
-        {photos.length > 0 && (
-          <p className="persist-hint">{t('persistHint')}</p>
-        )}
+        <AlbumSwitcher
+          albums={albums}
+          currentAlbumId={currentAlbumId}
+          onSwitch={switchAlbum}
+          onCreate={handleCreateAlbum}
+          onRename={handleRenameAlbum}
+          onDelete={handleDeleteAlbum}
+        />
+        {photos.length > 0 && <p className="persist-hint">{t('persistHint')}</p>}
       </header>
 
       <nav className="menu">
@@ -208,10 +313,22 @@ function App() {
             onClearAll={handleClearAll}
             onRemoveSelected={handleRemoveSelected}
             onReorder={handleReorder}
+            onRotatePhoto={handleRotatePhoto}
           />
         )}
 
-        {activeTab === 'album' && <PrintPanel photos={photos} />}
+        {activeTab === 'album' && (
+          <PrintPanel
+            photos={photos}
+            album={currentAlbum}
+            onUpdateAlbum={handleUpdateAlbum}
+            onMoveToPage={handleMoveToPage}
+            onReorderPhotos={handleReorder}
+            onRotatePhoto={handleRotatePhoto}
+            onCaptionChange={handleCaptionChange}
+            onSetCover={handleSetCover}
+          />
+        )}
       </main>
     </div>
   )

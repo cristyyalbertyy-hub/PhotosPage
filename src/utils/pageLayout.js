@@ -15,6 +15,11 @@ function safeAspect(value) {
   return value
 }
 
+export function rotatedAspect(aspect, rotation = 0) {
+  const safe = safeAspect(aspect)
+  return rotation % 180 === 90 ? 1 / safe : safe
+}
+
 function containInBox(aspect, x, y, boxW, boxH) {
   const scale = Math.min(boxW / aspect, boxH)
   const w = aspect * scale
