@@ -11,6 +11,10 @@ export default function AlbumPage({
   selected = false,
   onSelect,
   fillLabel,
+  included = true,
+  onToggleIncluded,
+  includeLabel,
+  excludeLabel,
 }) {
   const ready = photos.every((photo) => aspects[photo.id] != null)
   const photoAspects = photos.map((photo) => aspects[photo.id] ?? 1)
@@ -29,15 +33,29 @@ export default function AlbumPage({
     compact ? 'album-page--compact' : '',
     selected ? 'album-page--selected' : '',
     onSelect ? 'album-page--clickable' : '',
+    included ? '' : 'album-page--excluded',
   ]
     .filter(Boolean)
     .join(' ')
 
-  const content = (
-    <>
+  return (
+    <div className={className}>
       <div
         className="album-page-sheet"
         style={{ aspectRatio: `${pageW} / ${pageH}` }}
+        role={onSelect ? 'button' : undefined}
+        tabIndex={onSelect ? 0 : undefined}
+        onClick={onSelect}
+        onKeyDown={
+          onSelect
+            ? (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  onSelect()
+                }
+              }
+            : undefined
+        }
       >
         {!ready && (
           <div className="album-page-loading">
@@ -72,27 +90,24 @@ export default function AlbumPage({
           )}
         </span>
       )}
-    </>
+      {onToggleIncluded && (
+        <button
+          type="button"
+          className={`album-page-include ${included ? 'album-page-include--yes' : 'album-page-include--no'}`}
+          onClick={(event) => {
+            event.stopPropagation()
+            onToggleIncluded()
+          }}
+          aria-pressed={included}
+          aria-label={included ? includeLabel : excludeLabel}
+          title={included ? includeLabel : excludeLabel}
+        >
+          <span aria-hidden="true">{included ? '✓' : '✕'}</span>
+          {!compact && (
+            <span>{included ? includeLabel : excludeLabel}</span>
+          )}
+        </button>
+      )}
+    </div>
   )
-
-  if (onSelect) {
-    return (
-      <div
-        className={className}
-        role="button"
-        tabIndex={0}
-        onClick={onSelect}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault()
-            onSelect()
-          }
-        }}
-      >
-        {content}
-      </div>
-    )
-  }
-
-  return <div className={className}>{content}</div>
 }

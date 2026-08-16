@@ -9,6 +9,8 @@ export default function AlbumViewer({
   photosPerPage,
   orientation,
   layoutMode,
+  excludedPages,
+  onTogglePage,
 }) {
   const { t } = useLanguage()
   const pages = chunkPhotos(photos, photosPerPage)
@@ -74,6 +76,10 @@ export default function AlbumViewer({
           layoutMode={layoutMode}
           pageNumber={t('albumSheet', currentIndex + 1)}
           fillLabel={(pct) => t('albumFillRatio', pct)}
+          included={!excludedPages.has(currentIndex)}
+          onToggleIncluded={() => onTogglePage(currentIndex)}
+          includeLabel={t('albumPageInclude')}
+          excludeLabel={t('albumPageExclude')}
         />
       </div>
 
@@ -91,6 +97,10 @@ export default function AlbumViewer({
               compact
               selected={index === currentIndex}
               onSelect={() => setPageIndex(index)}
+              included={!excludedPages.has(index)}
+              onToggleIncluded={() => onTogglePage(index)}
+              includeLabel={t('albumPageInclude')}
+              excludeLabel={t('albumPageExclude')}
             />
           ))}
         </div>

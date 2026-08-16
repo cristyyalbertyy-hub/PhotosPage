@@ -76,11 +76,18 @@ export const translations = {
     albumPrev: 'Folha anterior',
     albumNext: 'Folha seguinte',
     albumSheets: 'Folhas do álbum',
+    albumPageInclude: 'Vai para o PDF',
+    albumPageExclude: 'Não vai para o PDF',
+    noPagesAlertTitle: 'Nenhuma folha incluída',
+    noPagesAlertMessage:
+      'Pelo menos uma folha precisa do visto verde para ser incluída no PDF.',
+    printSummarySkipped: (photos, included, total) =>
+      `${photos} foto${photos !== 1 ? 's' : ''} → ${included} de ${total} folhas no PDF`,
     layoutMode: 'Tamanho das fotos',
     layoutModeFill: 'Preencher espaço',
     layoutModeGrid: 'Grelha',
     layoutModeHint_fill:
-      'Cada foto cresce ou encolhe conforme a proporção, para aproveitar o espaço vazio da folha',
+      'As fotos ficam com tamanho semelhante e ocupam a folha de forma equilibrada',
     layoutModeHint_grid:
       'Tamanhos iguais numa grelha clássica — pode sobrar mais espaço em branco',
     quality: 'Qualidade',
@@ -195,11 +202,18 @@ export const translations = {
     albumPrev: 'Previous page',
     albumNext: 'Next page',
     albumSheets: 'Album pages',
+    albumPageInclude: 'Goes to the PDF',
+    albumPageExclude: 'Will not go to the PDF',
+    noPagesAlertTitle: 'No pages included',
+    noPagesAlertMessage:
+      'At least one page needs the green check to be included in the PDF.',
+    printSummarySkipped: (photos, included, total) =>
+      `${photos} photo${photos !== 1 ? 's' : ''} → ${included} of ${total} pages in the PDF`,
     layoutMode: 'Photo size',
     layoutModeFill: 'Fill space',
     layoutModeGrid: 'Grid',
     layoutModeHint_fill:
-      'Each photo grows or shrinks to its aspect ratio, filling empty space on the page',
+      'Photos stay a similar size and share the page evenly',
     layoutModeHint_grid:
       'Equal sizes in a classic grid — more leftover whitespace is likely',
     quality: 'Quality',

@@ -45,23 +45,22 @@ function layoutGrid(aspects, photosPerPage, pageW, pageH, margin, gap) {
   })
 }
 
-function compositions(n, maxPart) {
+function evenGroupings(n, maxPart) {
   const result = []
 
-  function walk(remaining, acc) {
-    if (remaining === 0) {
-      result.push([...acc])
-      return
-    }
-    const limit = Math.min(maxPart, remaining)
-    for (let size = 1; size <= limit; size++) {
-      acc.push(size)
-      walk(remaining - size, acc)
-      acc.pop()
-    }
+  for (let groups = 1; groups <= n; groups++) {
+    const smaller = Math.floor(n / groups)
+    const larger = Math.ceil(n / groups)
+    if (smaller < 1 || larger > maxPart) continue
+    if (smaller === 1 && larger > 1) continue
+
+    const largerCount = n % groups
+    result.push([
+      ...Array(largerCount).fill(larger),
+      ...Array(groups - largerCount).fill(smaller),
+    ])
   }
 
-  walk(n, [])
   return result
 }
 
@@ -150,6 +149,21 @@ function fillScore(rects, usableW, usableH) {
   return filled / (usableW * usableH)
 }
 
+function sizeUniformity(rects) {
+  if (rects.length <= 1) return 1
+  const areas = rects.map((rect) => rect.w * rect.h)
+  const maxArea = Math.max(...areas)
+  const minArea = Math.min(...areas)
+  if (maxArea <= 0) return 0
+  return minArea / maxArea
+}
+
+function layoutScore(rects, usableW, usableH) {
+  const fill = fillScore(rects, usableW, usableH)
+  const even = sizeUniformity(rects)
+  return fill * (0.2 + 0.8 * even)
+}
+
 function layoutFill(aspects, pageW, pageH, margin, gap, orientation) {
   const count = aspects.length
   if (count === 0) return []
@@ -177,18 +191,18 @@ function layoutFill(aspects, pageW, pageH, margin, gap, orientation) {
       usableH,
       margin,
     )
-    const score = fillScore(placed, usableW, usableH)
+    const score = layoutScore(placed, usableW, usableH)
     if (score > bestScore) {
       bestScore = score
       best = placed
     }
   }
 
-  for (const partition of compositions(count, maxPerRow)) {
+  for (const partition of evenGroupings(count, maxPerRow)) {
     consider(layoutByRows(aspects, partition, usableW, gap))
   }
 
-  for (const partition of compositions(count, maxPerCol)) {
+  for (const partition of evenGroupings(count, maxPerCol)) {
     consider(layoutByCols(aspects, partition, usableH, gap))
   }
 

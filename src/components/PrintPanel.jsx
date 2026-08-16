@@ -17,6 +17,7 @@ import AlbumViewer from './AlbumViewer'
 import LayoutPreview from './LayoutPreview'
 
 const EMAIL_MESSAGE_KEY = 'photosPage-email-message'
+const EMPTY_PAGES = new Set()
 
 export default function PrintPanel({ photos }) {
   const { lang, t } = useLanguage()
@@ -38,16 +39,39 @@ export default function PrintPanel({ photos }) {
   )
   const [sendingEmail, setSendingEmail] = useState(false)
   const [emailInfo, setEmailInfo] = useState('')
+  const [excludeState, setExcludeState] = useState({ key: '', pages: new Set() })
+  const [noPagesAlert, setNoPagesAlert] = useState(false)
 
   const selectedPhotos = useMemo(
     () => photos.filter((p) => p.selected),
     [photos],
   )
+  const pageKey = `${photosPerPage}:${selectedPhotos.map((p) => p.id).join(',')}`
+  const excludedPages =
+    excludeState.key === pageKey ? excludeState.pages : EMPTY_PAGES
+  const includedPhotos = useMemo(
+    () =>
+      selectedPhotos.filter((_, index) => {
+        const pageIndex = Math.floor(index / photosPerPage)
+        return !excludedPages.has(pageIndex)
+      }),
+    [selectedPhotos, photosPerPage, excludedPages],
+  )
   const selectedUrls = useMemo(
-    () => selectedPhotos.map((p) => p.url),
-    [selectedPhotos],
+    () => includedPhotos.map((p) => p.url),
+    [includedPhotos],
   )
   const aspects = usePhotoAspects(selectedPhotos)
+
+  function togglePageIncluded(pageIndex) {
+    setExcludeState((prev) => {
+      const current = prev.key === pageKey ? prev.pages : new Set()
+      const next = new Set(current)
+      if (next.has(pageIndex)) next.delete(pageIndex)
+      else next.add(pageIndex)
+      return { key: pageKey, pages: next }
+    })
+  }
 
   useEffect(() => {
     setFilename((prev) => {
@@ -104,6 +128,10 @@ export default function PrintPanel({ photos }) {
       handleNoSelection()
       return
     }
+    if (includedPhotos.length === 0) {
+      setNoPagesAlert(true)
+      return
+    }
     handlePrint()
   }
 
@@ -113,6 +141,11 @@ export default function PrintPanel({ photos }) {
 
     if (selectedPhotos.length === 0) {
       handleNoSelection()
+      return
+    }
+
+    if (includedPhotos.length === 0) {
+      setNoPagesAlert(true)
       return
     }
 
@@ -177,7 +210,7 @@ export default function PrintPanel({ photos }) {
   async function handlePrint() {
     setError('')
     setProgress(null)
-    if (selectedPhotos.length === 0) return
+    if (selectedPhotos.length === 0 || includedPhotos.length === 0) return
 
     setPrinting(true)
     try {
@@ -206,6 +239,7 @@ export default function PrintPanel({ photos }) {
   }
 
   const totalPages = Math.ceil(selectedPhotos.length / photosPerPage)
+  const includedPageCount = totalPages - excludedPages.size
 
   function renderSizeEstimate() {
     if (selectedPhotos.length === 0) return null
@@ -328,6 +362,8 @@ export default function PrintPanel({ photos }) {
             photosPerPage={photosPerPage}
             orientation={orientation}
             layoutMode={layoutMode}
+            excludedPages={excludedPages}
+            onTogglePage={togglePageIncluded}
           />
         ) : (
           <div className="album-viewer album-viewer--empty">
@@ -357,7 +393,14 @@ export default function PrintPanel({ photos }) {
 
         {selectedPhotos.length > 0 && (
           <p className="print-info">
-            {t('printSummary', selectedPhotos.length, totalPages)}
+            {excludedPages.size > 0
+              ? t(
+                  'printSummarySkipped',
+                  includedPhotos.length,
+                  includedPageCount,
+                  totalPages,
+                )
+              : t('printSummary', selectedPhotos.length, totalPages)}
           </p>
         )}
 
@@ -402,10 +445,10 @@ export default function PrintPanel({ photos }) {
 
         <button
           type="button"
-          className={`btn-print ${selectedPhotos.length === 0 && !isBusy ? 'btn-print--inactive' : ''}`}
+          className={`btn-print ${includedPhotos.length === 0 && !isBusy ? 'btn-print--inactive' : ''}`}
           onClick={handleSaveClick}
           disabled={isBusy || estimating}
-          aria-disabled={selectedPhotos.length === 0}
+          aria-disabled={includedPhotos.length === 0}
         >
           <span className="printer-icon-sm" aria-hidden="true">
             🖨️
@@ -441,10 +484,10 @@ export default function PrintPanel({ photos }) {
 
           <button
             type="button"
-            className={`btn-email ${selectedPhotos.length === 0 && !isBusy ? 'btn-print--inactive' : ''}`}
+            className={`btn-email ${includedPhotos.length === 0 && !isBusy ? 'btn-print--inactive' : ''}`}
             onClick={handleSendEmail}
             disabled={isBusy || estimating}
-            aria-disabled={selectedPhotos.length === 0}
+            aria-disabled={includedPhotos.length === 0}
           >
             <span aria-hidden="true">✉️</span>
             {sendingEmail ? renderProgressLabel() : t('sendEmail')}
@@ -459,6 +502,14 @@ export default function PrintPanel({ photos }) {
         message={t('selectPhotosAlertMessage')}
         confirmLabel={t('selectPhotosAlertOk')}
         onCancel={() => setNoSelectionAlert(false)}
+      />
+      <ConfirmDialog
+        open={noPagesAlert}
+        variant="alert"
+        title={t('noPagesAlertTitle')}
+        message={t('noPagesAlertMessage')}
+        confirmLabel={t('selectPhotosAlertOk')}
+        onCancel={() => setNoPagesAlert(false)}
       />
     </section>
   )

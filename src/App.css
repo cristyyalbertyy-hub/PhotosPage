@@ -844,6 +844,47 @@ section h2 {
   font-size: 0.7rem;
 }
 
+.album-page--excluded .album-page-sheet {
+  opacity: 0.45;
+  filter: grayscale(0.35);
+}
+
+.album-page-include {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 2px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: var(--shadow);
+}
+
+.album-page-include--yes {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.album-page-include--no {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.album-page-include:hover {
+  filter: brightness(0.97);
+}
+
+.album-page--compact .album-page-include {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
 .per-page-options {
   display: flex;
   flex-wrap: wrap;
