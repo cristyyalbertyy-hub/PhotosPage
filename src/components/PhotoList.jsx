@@ -85,6 +85,7 @@ export default function PhotoList({
             {t('selectedOf', selectedCount, photos.length)}
           </p>
           <p className="drag-hint">{t('dragToReorder')}</p>
+          <p className="drag-hint">{t('albumListHint')}</p>
         </div>
         <div className="list-actions">
           <button

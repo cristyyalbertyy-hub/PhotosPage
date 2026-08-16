@@ -129,6 +129,8 @@ function App() {
     await savePhotoOrder(reordered)
   }
 
+  const selectedCount = photos.filter((p) => p.selected).length
+
   if (loading) {
     return (
       <div className="app">
@@ -184,25 +186,32 @@ function App() {
           🖼️ {t('tabList')}
           {photos.length > 0 && <span className="badge">{photos.length}</span>}
         </button>
+        <button
+          type="button"
+          className={`menu-btn ${activeTab === 'album' ? 'active' : ''}`}
+          onClick={() => setActiveTab('album')}
+        >
+          📖 {t('tabAlbum')}
+          {selectedCount > 0 && <span className="badge">{selectedCount}</span>}
+        </button>
       </nav>
 
       <main className="app-main">
         {activeTab === 'entrada' && <PhotoEntry onAddMany={handleAddMany} />}
 
         {activeTab === 'lista' && (
-          <>
-            <PhotoList
-              photos={photos}
-              onToggleSelect={handleToggleSelect}
-              onRemove={handleRemove}
-              onSelectAll={handleSelectAll}
-              onClearAll={handleClearAll}
-              onRemoveSelected={handleRemoveSelected}
-              onReorder={handleReorder}
-            />
-            <PrintPanel photos={photos} />
-          </>
+          <PhotoList
+            photos={photos}
+            onToggleSelect={handleToggleSelect}
+            onRemove={handleRemove}
+            onSelectAll={handleSelectAll}
+            onClearAll={handleClearAll}
+            onRemoveSelected={handleRemoveSelected}
+            onReorder={handleReorder}
+          />
         )}
+
+        {activeTab === 'album' && <PrintPanel photos={photos} />}
       </main>
     </div>
   )

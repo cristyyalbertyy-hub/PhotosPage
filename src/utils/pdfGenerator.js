@@ -1,9 +1,9 @@
 import { zipSync } from 'fflate'
 import { jsPDF } from 'jspdf'
-import { getSlotsForPage, LAYOUT_META, slotToRect } from './pdfLayouts'
+import { layoutPage } from './pageLayout'
 
-export const MARGIN = 10
-export const GAP = 4
+export { MARGIN, GAP, getPageDimensions } from './pageLayout'
+
 export const EMAIL_SIZE_LIMIT = 20 * 1024 * 1024
 
 export const QUALITY_PROFILES = {
@@ -12,13 +12,6 @@ export const QUALITY_PROFILES = {
 }
 
 const PDF_OVERHEAD_PER_PAGE = 4096
-
-export function getPageDimensions(orientation) {
-  if (orientation === 'landscape') {
-    return { width: 297, height: 210 }
-  }
-  return { width: 210, height: 297 }
-}
 
 function mmToPx(mm, dpi) {
   return Math.max(1, Math.round((mm / 25.4) * dpi))
@@ -50,37 +43,9 @@ function resizeToDataUrl(img, maxW, maxH, jpegQuality) {
   return { dataUrl, width: w, height: h, byteSize: dataUrlByteSize(dataUrl) }
 }
 
-function fitInCell(imgW, imgH, cellW, cellH) {
-  const scale = Math.min(cellW / imgW, cellH / imgH)
-  const w = imgW * scale
-  const h = imgH * scale
-  return {
-    x: (cellW - w) / 2,
-    y: (cellH - h) / 2,
-    w,
-    h,
-  }
-}
-
-function getSlotRect(photosPerPage, indexOnPage, countOnPage, orientation) {
-  const layout = LAYOUT_META[photosPerPage]
-  const { width: pageWidth, height: pageHeight } = getPageDimensions(orientation)
-  const slots = getSlotsForPage(photosPerPage, countOnPage)
-  return slotToRect(
-    slots[indexOnPage],
-    layout.cols,
-    layout.rows,
-    MARGIN,
-    GAP,
-    pageWidth,
-    pageHeight,
-  )
-}
-
-function prepareImageForSlot(img, photosPerPage, indexOnPage, countOnPage, orientation, profile) {
-  const rect = getSlotRect(photosPerPage, indexOnPage, countOnPage, orientation)
-  const maxW = mmToPx(rect.cellW, profile.dpi)
-  const maxH = mmToPx(rect.cellH, profile.dpi)
+function prepareImageForRect(img, rect, profile) {
+  const maxW = mmToPx(rect.w, profile.dpi)
+  const maxH = mmToPx(rect.h, profile.dpi)
   return resizeToDataUrl(img, maxW, maxH, profile.jpegQuality)
 }
 
@@ -95,6 +60,7 @@ export async function estimatePdfSize(
   photosPerPage,
   orientation = 'portrait',
   quality = 'email',
+  layoutMode = 'fill',
 ) {
   if (photoUrls.length === 0) {
     return { totalBytes: 0, partCount: 0, fitsEmail: true }
@@ -104,20 +70,18 @@ export async function estimatePdfSize(
   const images = await Promise.all(photoUrls.map(loadImageElement))
   let imageBytes = 0
 
-  for (let i = 0; i < images.length; i++) {
-    const pageStart = Math.floor(i / photosPerPage) * photosPerPage
-    const pageEnd = Math.min(pageStart + photosPerPage, images.length)
-    const countOnPage = pageEnd - pageStart
-    const indexOnPage = i - pageStart
-    const prepared = prepareImageForSlot(
-      images[i],
+  for (let pageStart = 0; pageStart < images.length; pageStart += photosPerPage) {
+    const pageImages = images.slice(pageStart, pageStart + photosPerPage)
+    const { rects } = layoutPage({
+      aspects: pageImages.map((img) => img.naturalWidth / img.naturalHeight),
       photosPerPage,
-      indexOnPage,
-      countOnPage,
       orientation,
-      profile,
-    )
-    imageBytes += prepared.byteSize
+      mode: layoutMode,
+    })
+
+    pageImages.forEach((img, index) => {
+      imageBytes += prepareImageForRect(img, rects[index], profile).byteSize
+    })
   }
 
   const pageCount = Math.ceil(images.length / photosPerPage)
@@ -145,9 +109,7 @@ function splitPhotoUrls(photoUrls, photosPerPage, orientation, quality, partCoun
   return parts
 }
 
-async function buildPdfBlob(photoUrls, photosPerPage, orientation, profile) {
-  const layout = LAYOUT_META[photosPerPage]
-  const { width: pageWidth, height: pageHeight } = getPageDimensions(orientation)
+async function buildPdfBlob(photoUrls, photosPerPage, orientation, profile, layoutMode) {
   const pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4' })
   const images = await Promise.all(photoUrls.map(loadImageElement))
 
@@ -155,31 +117,17 @@ async function buildPdfBlob(photoUrls, photosPerPage, orientation, profile) {
     if (pageStart > 0) pdf.addPage(orientation, 'a4')
 
     const pageImages = images.slice(pageStart, pageStart + photosPerPage)
-    const countOnPage = pageImages.length
-    const slots = getSlotsForPage(photosPerPage, countOnPage)
+    const { rects } = layoutPage({
+      aspects: pageImages.map((img) => img.naturalWidth / img.naturalHeight),
+      photosPerPage,
+      orientation,
+      mode: layoutMode,
+    })
 
     pageImages.forEach((img, i) => {
-      const rect = slotToRect(
-        slots[i],
-        layout.cols,
-        layout.rows,
-        MARGIN,
-        GAP,
-        pageWidth,
-        pageHeight,
-      )
-      const maxW = mmToPx(rect.cellW, profile.dpi)
-      const maxH = mmToPx(rect.cellH, profile.dpi)
-      const prepared = resizeToDataUrl(img, maxW, maxH, profile.jpegQuality)
-      const fit = fitInCell(prepared.width, prepared.height, rect.cellW, rect.cellH)
-      pdf.addImage(
-        prepared.dataUrl,
-        'JPEG',
-        rect.x + fit.x,
-        rect.y + fit.y,
-        fit.w,
-        fit.h,
-      )
+      const rect = rects[i]
+      const prepared = prepareImageForRect(img, rect, profile)
+      pdf.addImage(prepared.dataUrl, 'JPEG', rect.x, rect.y, rect.w, rect.h)
     })
   }
 
@@ -215,6 +163,7 @@ export async function buildPdfFiles({
   filename,
   orientation = 'portrait',
   quality = 'email',
+  layoutMode = 'fill',
   onProgress,
 }) {
   if (photoUrls.length === 0) {
@@ -223,7 +172,13 @@ export async function buildPdfFiles({
 
   const profile = QUALITY_PROFILES[quality] || QUALITY_PROFILES.email
   const safeName = filename.trim() || 'fotos'
-  const estimate = await estimatePdfSize(photoUrls, photosPerPage, orientation, quality)
+  const estimate = await estimatePdfSize(
+    photoUrls,
+    photosPerPage,
+    orientation,
+    quality,
+    layoutMode,
+  )
   const shouldSplit = !estimate.fitsEmail
   const parts = shouldSplit
     ? splitPhotoUrls(photoUrls, photosPerPage, orientation, quality, estimate.partCount)
@@ -232,7 +187,13 @@ export async function buildPdfFiles({
   const files = []
   for (let i = 0; i < parts.length; i++) {
     onProgress?.({ current: i + 1, total: parts.length })
-    const blob = await buildPdfBlob(parts[i], photosPerPage, orientation, profile)
+    const blob = await buildPdfBlob(
+      parts[i],
+      photosPerPage,
+      orientation,
+      profile,
+      layoutMode,
+    )
     const partName =
       parts.length === 1 ? `${safeName}.pdf` : `${safeName}_parte${i + 1}.pdf`
     files.push({ name: partName, blob })
@@ -254,6 +215,7 @@ export async function generatePdf({
   filename,
   orientation = 'portrait',
   quality = 'email',
+  layoutMode = 'fill',
   downloadAsZip = false,
   onProgress,
 }) {
@@ -263,6 +225,7 @@ export async function generatePdf({
     filename,
     orientation,
     quality,
+    layoutMode,
     onProgress,
   })
 

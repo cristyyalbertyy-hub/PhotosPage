@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import ConfirmDialog from './ConfirmDialog'
 import { useLanguage } from '../i18n/LanguageContext'
+import { usePhotoAspects } from '../hooks/usePhotoAspects'
 import {
   getSavedRecipient,
   saveRecipient,
@@ -12,6 +13,7 @@ import {
   formatBytes,
   generatePdf,
 } from '../utils/pdfGenerator'
+import AlbumViewer from './AlbumViewer'
 import LayoutPreview from './LayoutPreview'
 
 const EMAIL_MESSAGE_KEY = 'photosPage-email-message'
@@ -20,6 +22,7 @@ export default function PrintPanel({ photos }) {
   const { lang, t } = useLanguage()
   const [photosPerPage, setPhotosPerPage] = useState(4)
   const [orientation, setOrientation] = useState('portrait')
+  const [layoutMode, setLayoutMode] = useState('fill')
   const [filename, setFilename] = useState(lang === 'en' ? 'photos' : 'fotos')
   const [quality, setQuality] = useState('email')
   const [downloadAsZip, setDownloadAsZip] = useState(true)
@@ -44,6 +47,7 @@ export default function PrintPanel({ photos }) {
     () => selectedPhotos.map((p) => p.url),
     [selectedPhotos],
   )
+  const aspects = usePhotoAspects(selectedPhotos)
 
   useEffect(() => {
     setFilename((prev) => {
@@ -71,6 +75,7 @@ export default function PrintPanel({ photos }) {
           photosPerPage,
           orientation,
           quality,
+          layoutMode,
         )
         if (!cancelled) setEstimate(result)
       } catch {
@@ -84,7 +89,7 @@ export default function PrintPanel({ photos }) {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [selectedUrls, photosPerPage, orientation, quality])
+  }, [selectedUrls, photosPerPage, orientation, quality, layoutMode])
 
   useEffect(() => {
     if (estimate?.partCount > 1) setDownloadAsZip(true)
@@ -129,6 +134,7 @@ export default function PrintPanel({ photos }) {
         filename,
         orientation,
         quality,
+        layoutMode,
         onProgress: ({ current, total }) => {
           setProgress({ current, total })
         },
@@ -181,6 +187,7 @@ export default function PrintPanel({ photos }) {
         filename,
         orientation,
         quality,
+        layoutMode,
         downloadAsZip: estimate?.partCount > 1 && downloadAsZip,
         onProgress: ({ current, total }) => {
           setProgress({ current, total })
@@ -199,8 +206,6 @@ export default function PrintPanel({ photos }) {
   }
 
   const totalPages = Math.ceil(selectedPhotos.length / photosPerPage)
-  const lastPageCount =
-    selectedPhotos.length % photosPerPage || photosPerPage
 
   function renderSizeEstimate() {
     if (selectedPhotos.length === 0) return null
@@ -241,36 +246,13 @@ export default function PrintPanel({ photos }) {
     <section className="print-panel">
       <div className="print-header">
         <span className="printer-icon" aria-hidden="true">
-          🖨️
+          📖
         </span>
         <h2>{t('printTitle')}</h2>
       </div>
       <p className="section-desc">{t('printDesc')}</p>
 
       <div className="print-controls">
-        <label className="control-group">
-          <span>{t('quality')}</span>
-          <div className="orientation-options">
-            <button
-              type="button"
-              className={`orientation-btn ${quality === 'email' ? 'active' : ''}`}
-              onClick={() => setQuality('email')}
-            >
-              {t('qualityEmail')}
-            </button>
-            <button
-              type="button"
-              className={`orientation-btn ${quality === 'print' ? 'active' : ''}`}
-              onClick={() => setQuality('print')}
-            >
-              {t('qualityPrint')}
-            </button>
-          </div>
-          <p className="control-hint">
-            {t(quality === 'email' ? 'qualityHint_email' : 'qualityHint_print')}
-          </p>
-        </label>
-
         <label className="control-group">
           <span>{t('orientation')}</span>
           <div className="orientation-options">
@@ -316,17 +298,47 @@ export default function PrintPanel({ photos }) {
           </div>
         </label>
 
-        <LayoutPreview
-          photosPerPage={photosPerPage}
-          orientation={orientation}
-          photoCount={
-            selectedPhotos.length > 0
-              ? totalPages > 1
-                ? lastPageCount
-                : selectedPhotos.length
-              : photosPerPage
-          }
-        />
+        <label className="control-group">
+          <span>{t('layoutMode')}</span>
+          <div className="orientation-options">
+            <button
+              type="button"
+              className={`orientation-btn ${layoutMode === 'fill' ? 'active' : ''}`}
+              onClick={() => setLayoutMode('fill')}
+            >
+              {t('layoutModeFill')}
+            </button>
+            <button
+              type="button"
+              className={`orientation-btn ${layoutMode === 'grid' ? 'active' : ''}`}
+              onClick={() => setLayoutMode('grid')}
+            >
+              {t('layoutModeGrid')}
+            </button>
+          </div>
+          <p className="control-hint">
+            {t(layoutMode === 'fill' ? 'layoutModeHint_fill' : 'layoutModeHint_grid')}
+          </p>
+        </label>
+
+        {selectedPhotos.length > 0 ? (
+          <AlbumViewer
+            photos={selectedPhotos}
+            aspects={aspects}
+            photosPerPage={photosPerPage}
+            orientation={orientation}
+            layoutMode={layoutMode}
+          />
+        ) : (
+          <div className="album-viewer album-viewer--empty">
+            <p className="album-empty">{t('albumEmpty')}</p>
+            <LayoutPreview
+              photosPerPage={photosPerPage}
+              orientation={orientation}
+              photoCount={photosPerPage}
+            />
+          </div>
+        )}
 
         <label className="control-group">
           <span>{t('filename')}</span>
@@ -348,6 +360,29 @@ export default function PrintPanel({ photos }) {
             {t('printSummary', selectedPhotos.length, totalPages)}
           </p>
         )}
+
+        <label className="control-group">
+          <span>{t('quality')}</span>
+          <div className="orientation-options">
+            <button
+              type="button"
+              className={`orientation-btn ${quality === 'email' ? 'active' : ''}`}
+              onClick={() => setQuality('email')}
+            >
+              {t('qualityEmail')}
+            </button>
+            <button
+              type="button"
+              className={`orientation-btn ${quality === 'print' ? 'active' : ''}`}
+              onClick={() => setQuality('print')}
+            >
+              {t('qualityPrint')}
+            </button>
+          </div>
+          <p className="control-hint">
+            {t(quality === 'email' ? 'qualityHint_email' : 'qualityHint_print')}
+          </p>
+        </label>
 
         {renderSizeEstimate()}
 
