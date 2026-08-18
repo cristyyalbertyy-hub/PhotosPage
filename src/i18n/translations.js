@@ -14,7 +14,7 @@ export const translations = {
     rotatePhoto: 'Rodar 90°',
     resizePhoto: 'Arrastar para aumentar ou reduzir (duplo clique volta a 100%)',
     albumResizeHint:
-      'Arraste o canto ◢ de uma foto para a aumentar e aproveitar o espaço livre',
+      'Arraste o canto ◢ de uma foto para a aumentar e aproveitar o espaço livre (se crescer muito, pode tapar a vizinha)',
     setAsCover: 'Usar como capa',
     captionPlaceholder: 'Legenda',
     dropOnPage: 'Largar aqui',
@@ -179,7 +179,8 @@ export const translations = {
     confirmDeleteAlbumYes: 'Yes, delete album',
     rotatePhoto: 'Rotate 90°',
     resizePhoto: 'Drag to enlarge or shrink (double-click resets to 100%)',
-    albumResizeHint: 'Drag a photo corner ◢ to enlarge it and use the free space',
+    albumResizeHint:
+      'Drag a photo corner ◢ to enlarge it and use the free space (a large photo may cover its neighbour)',
     setAsCover: 'Use as cover',
     captionPlaceholder: 'Caption',
     dropOnPage: 'Drop here',
