@@ -25,6 +25,19 @@ import {
 const EMAIL_MESSAGE_KEY = 'photosPage-email-message'
 const EMPTY_PAGES = new Set()
 
+// How big the photos come out, expressed as photos per sheet.
+const PHOTO_SIZES = [
+  { id: 'large', perPage: 2 },
+  { id: 'medium', perPage: 4 },
+  { id: 'small', perPage: 6 },
+]
+
+function photoSizeOf(perPage) {
+  if (perPage <= 2) return 'large'
+  if (perPage <= 4) return 'medium'
+  return 'small'
+}
+
 export default function PrintPanel({
   photos,
   album,
@@ -38,6 +51,7 @@ export default function PrintPanel({
 }) {
   const { lang, t } = useLanguage()
   const photosPerPage = album.photosPerPage
+  const photoSize = photoSizeOf(photosPerPage)
   const orientation = album.orientation
   const layoutMode = album.layoutMode
   const filename = album.filename
@@ -406,24 +420,24 @@ export default function PrintPanel({
         </label>
 
         <label className="control-group">
-          <span>{t('photosPerPage')}</span>
-          <div className="per-page-options">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+          <span>{t('photoSize')}</span>
+          <div className="orientation-options">
+            {PHOTO_SIZES.map(({ id, perPage }) => (
               <button
-                key={n}
+                key={id}
                 type="button"
-                className={`per-page-btn ${photosPerPage === n ? 'active' : ''}`}
-                onClick={() => onUpdateAlbum({ photosPerPage: n })}
+                className={`orientation-btn ${photoSize === id ? 'active' : ''}`}
+                onClick={() => onUpdateAlbum({ photosPerPage: perPage })}
               >
-                {n}
+                {t(`photoSize_${id}`)}
               </button>
             ))}
           </div>
-          <span className="control-hint">
+          <p className="control-hint">
             {layoutMode === 'fill'
-              ? t('photosPerPageFlexible')
-              : t('photosPerPageExact')}
-          </span>
+              ? t('photoSizeHintFill', photosPerPage)
+              : t('photoSizeHintGrid', photosPerPage)}
+          </p>
         </label>
 
         <label className="control-group">

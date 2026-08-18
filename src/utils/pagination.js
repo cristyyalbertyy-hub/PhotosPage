@@ -4,8 +4,12 @@ export const MAX_PER_PAGE = 8
 
 // Beyond this the search is not worth the wait, so the sheets stay uniform.
 const MAX_PHOTOS = 200
-// How far a sheet may stray from the number of photos asked for.
-const DEFAULT_SPREAD = 2
+
+// How far a sheet may stray from the number of photos asked for. Sheets of few
+// photos get a tighter margin, so "large photos" never turns into a busy sheet.
+function defaultSpread(target) {
+  return Math.max(1, Math.round(target / 2))
+}
 
 export function fixedPageSizes(count, perPage) {
   const sizes = []
@@ -34,12 +38,7 @@ export function chunkBySizes(items, sizes) {
  * number of sheets, so that portrait and landscape photos end up on the sheets
  * where they leave the least white space.
  */
-export function pageSizesByFill({
-  aspects,
-  perPage,
-  orientation,
-  spread = DEFAULT_SPREAD,
-}) {
+export function pageSizesByFill({ aspects, perPage, orientation, spread }) {
   const count = aspects.length
   const target = Math.min(Math.max(Math.round(perPage) || 4, 1), MAX_PER_PAGE)
   if (count === 0) return []
@@ -48,8 +47,9 @@ export function pageSizesByFill({
   const fallback = () => fixedPageSizes(count, target)
   if (pageCount === 1 || count > MAX_PHOTOS) return fallback()
 
-  const minSize = Math.max(1, target - spread)
-  const maxSize = Math.min(MAX_PER_PAGE, target + spread)
+  const margin = spread ?? defaultSpread(target)
+  const minSize = Math.max(1, target - margin)
+  const maxSize = Math.min(MAX_PER_PAGE, target + margin)
 
   const cache = new Map()
   function fillOf(start, size) {

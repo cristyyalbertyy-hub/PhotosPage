@@ -121,11 +121,11 @@ export const translations = {
       'Pelo menos uma folha precisa do visto verde para ser incluída no PDF.',
     printSummarySkipped: (photos, included, total) =>
       `${photos} foto${photos !== 1 ? 's' : ''} → ${included} de ${total} folhas no PDF`,
-    layoutMode: 'Tamanho das fotos',
+    layoutMode: 'Arranjo das folhas',
     layoutModeFill: 'Preencher espaço',
     layoutModeGrid: 'Grelha',
     layoutModeHint_fill:
-      'A app escolhe quantas fotos entram em cada folha para deixar o menor espaço em branco',
+      'Cada folha leva as fotos que melhor a preenchem, com as proporções originais',
     layoutModeHint_grid:
       'Tamanhos iguais numa grelha clássica — pode sobrar mais espaço em branco',
     quality: 'Qualidade',
@@ -145,10 +145,13 @@ export const translations = {
     orientation: 'Orientação da página',
     portrait: 'Retrato',
     landscape: 'Paisagem',
-    photosPerPage: 'Fotos por página',
-    photosPerPageFlexible:
-      'Valor médio: cada folha pode levar mais ou menos fotos, conforme o que preenche melhor',
-    photosPerPageExact: 'Número exacto de fotos em cada folha',
+    photoSize: 'Tamanho das fotos',
+    photoSize_large: 'Grandes',
+    photoSize_medium: 'Médias',
+    photoSize_small: 'Pequenas',
+    photoSizeHintFill: (n) =>
+      `Cerca de ${n} fotos por folha — a app escolhe quantas entram em cada uma para deixar o menor espaço em branco`,
+    photoSizeHintGrid: (n) => `Grelha fixa de ${n} fotos em cada folha`,
     filename: 'Nome do ficheiro',
     printSummary: (photos, pages) =>
       `${photos} foto${photos !== 1 ? 's' : ''} → ${pages} página${pages !== 1 ? 's' : ''}`,
@@ -286,11 +289,11 @@ export const translations = {
       'At least one page needs the green check to be included in the PDF.',
     printSummarySkipped: (photos, included, total) =>
       `${photos} photo${photos !== 1 ? 's' : ''} → ${included} of ${total} pages in the PDF`,
-    layoutMode: 'Photo size',
+    layoutMode: 'Sheet layout',
     layoutModeFill: 'Fill space',
     layoutModeGrid: 'Grid',
     layoutModeHint_fill:
-      'The app decides how many photos go on each sheet to leave the least whitespace',
+      'Each sheet takes the photos that fill it best, keeping the original proportions',
     layoutModeHint_grid:
       'Equal sizes in a classic grid — more leftover whitespace is likely',
     quality: 'Quality',
@@ -310,10 +313,13 @@ export const translations = {
     orientation: 'Page orientation',
     portrait: 'Portrait',
     landscape: 'Landscape',
-    photosPerPage: 'Photos per page',
-    photosPerPageFlexible:
-      'Average value: each sheet may take more or fewer photos, whichever fills it best',
-    photosPerPageExact: 'Exact number of photos on every sheet',
+    photoSize: 'Photo size',
+    photoSize_large: 'Large',
+    photoSize_medium: 'Medium',
+    photoSize_small: 'Small',
+    photoSizeHintFill: (n) =>
+      `About ${n} photos per sheet — the app picks how many go on each one to leave the least whitespace`,
+    photoSizeHintGrid: (n) => `Fixed grid of ${n} photos on every sheet`,
     filename: 'File name',
     printSummary: (photos, pages) =>
       `${photos} photo${photos !== 1 ? 's' : ''} → ${pages} page${pages !== 1 ? 's' : ''}`,
