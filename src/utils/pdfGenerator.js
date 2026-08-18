@@ -34,7 +34,12 @@ function loadImageElement(url) {
 
 function normalizePhotos(photoUrls, photoItems) {
   if (photoItems?.length) return photoItems
-  return (photoUrls || []).map((url) => ({ url, rotation: 0, caption: '' }))
+  return (photoUrls || []).map((url) => ({
+    url,
+    rotation: 0,
+    scale: 1,
+    caption: '',
+  }))
 }
 
 function rotateToDataUrl(img, rotation, maxW, maxH, jpegQuality) {
@@ -165,6 +170,7 @@ export async function estimatePdfSize(
       photosPerPage,
       orientation,
       mode: layoutMode,
+      scales: pageItems.map((item) => item.scale ?? 1),
     })
 
     pageImages.forEach((img, index) => {
@@ -228,6 +234,7 @@ async function buildPdfBlob(items, photosPerPage, orientation, profile, layoutMo
       photosPerPage,
       orientation,
       mode: layoutMode,
+      scales: pageItems.map((item) => item.scale ?? 1),
     })
 
     pageImages.forEach((img, i) => {

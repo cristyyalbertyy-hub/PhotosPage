@@ -2,6 +2,13 @@ import { getSlotsForPage, LAYOUT_META, slotToRect } from './pdfLayouts'
 
 export const MARGIN = 10
 export const GAP = 4
+export const MIN_SCALE = 0.4
+export const MAX_SCALE = 3
+
+export function clampScale(value) {
+  if (!Number.isFinite(value)) return 1
+  return Math.min(MAX_SCALE, Math.max(MIN_SCALE, value))
+}
 
 export function getPageDimensions(orientation) {
   if (orientation === 'landscape') {
@@ -221,6 +228,33 @@ export function computeFillRatio(rects, pageW, pageH, margin = MARGIN) {
   return fillScore(rects, usableW, usableH)
 }
 
+// Grows or shrinks each photo around its own centre, keeping it inside the page.
+function applyScales(rects, scales, pageW, pageH, margin) {
+  if (!scales?.length) return rects
+
+  return rects.map((rect, i) => {
+    const requested = clampScale(scales[i] ?? 1)
+    const fit = Math.min(
+      (pageW - margin * 2) / rect.w,
+      (pageH - margin * 2) / rect.h,
+    )
+    const scale = Math.min(requested, fit)
+    if (scale === 1) return rect
+
+    const w = rect.w * scale
+    const h = rect.h * scale
+    const maxX = Math.max(margin, pageW - margin - w)
+    const maxY = Math.max(margin, pageH - margin - h)
+
+    return {
+      x: Math.min(Math.max(rect.x - (w - rect.w) / 2, margin), maxX),
+      y: Math.min(Math.max(rect.y - (h - rect.h) / 2, margin), maxY),
+      w,
+      h,
+    }
+  })
+}
+
 export function layoutPage({
   aspects,
   photosPerPage,
@@ -228,16 +262,19 @@ export function layoutPage({
   mode = 'fill',
   margin = MARGIN,
   gap = GAP,
+  scales,
 }) {
   const { width: pageW, height: pageH } = getPageDimensions(orientation)
   const safe = aspects.map(safeAspect)
-  const rects =
+  const baseRects =
     mode === 'grid'
       ? layoutGrid(safe, photosPerPage, pageW, pageH, margin, gap)
       : layoutFill(safe, pageW, pageH, margin, gap, orientation)
+  const rects = applyScales(baseRects, scales, pageW, pageH, margin)
 
   return {
     rects,
+    baseRects,
     pageW,
     pageH,
     fillRatio: computeFillRatio(rects, pageW, pageH, margin),

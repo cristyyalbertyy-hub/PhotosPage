@@ -19,6 +19,7 @@ export default function AlbumViewer({
   onRotatePhoto,
   onCaptionChange,
   onSetCover,
+  onScaleChange,
 }) {
   const { t } = useLanguage()
   const pages = chunkPhotos(photos, photosPerPage)
@@ -67,10 +68,12 @@ export default function AlbumViewer({
     onRotatePhoto,
     onCaptionChange,
     onSetCover,
+    onScaleChange,
     rotateLabel: t('rotatePhoto'),
     coverLabel: t('setAsCover'),
     captionPlaceholder: t('captionPlaceholder'),
     dropLabel: t('dropOnPage'),
+    resizeLabel: t('resizePhoto'),
   }
 
   return (
@@ -81,7 +84,10 @@ export default function AlbumViewer({
             ? t('coverSheet')
             : t('albumPageOf', photoPageIndex + 1, totalPhotoPages)}
         </p>
-        <p className="album-move-hint">{t('albumMoveHint')}</p>
+        <div className="album-hints">
+          <p className="album-move-hint">{t('albumMoveHint')}</p>
+          <p className="album-move-hint">{t('albumResizeHint')}</p>
+        </div>
         <div className="album-nav">
           <button
             type="button"

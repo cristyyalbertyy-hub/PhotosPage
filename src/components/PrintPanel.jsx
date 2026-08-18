@@ -28,6 +28,7 @@ export default function PrintPanel({
   onRotatePhoto,
   onCaptionChange,
   onSetCover,
+  onScaleChange,
 }) {
   const { lang, t } = useLanguage()
   const photosPerPage = album.photosPerPage
@@ -70,6 +71,7 @@ export default function PrintPanel({
       includedPhotos.map((photo) => ({
         url: photo.url,
         rotation: photo.rotation || 0,
+        scale: photo.scale ?? 1,
         caption: photo.caption || '',
       })),
     [includedPhotos],
@@ -404,6 +406,7 @@ export default function PrintPanel({
             onRotatePhoto={onRotatePhoto}
             onCaptionChange={onCaptionChange}
             onSetCover={onSetCover}
+            onScaleChange={onScaleChange}
           />
         ) : (
           <div className="album-viewer album-viewer--empty">

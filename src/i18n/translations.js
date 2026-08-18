@@ -12,6 +12,9 @@ export const translations = {
       'O álbum e as respetivas fotos serão removidos. Não pode ser desfeito.',
     confirmDeleteAlbumYes: 'Sim, apagar álbum',
     rotatePhoto: 'Rodar 90°',
+    resizePhoto: 'Arrastar para aumentar ou reduzir (duplo clique volta a 100%)',
+    albumResizeHint:
+      'Arraste o canto ◢ de uma foto para a aumentar e aproveitar o espaço livre',
     setAsCover: 'Usar como capa',
     captionPlaceholder: 'Legenda',
     dropOnPage: 'Largar aqui',
@@ -175,6 +178,8 @@ export const translations = {
       'The album and its photos will be removed. This cannot be undone.',
     confirmDeleteAlbumYes: 'Yes, delete album',
     rotatePhoto: 'Rotate 90°',
+    resizePhoto: 'Drag to enlarge or shrink (double-click resets to 100%)',
+    albumResizeHint: 'Drag a photo corner ◢ to enlarge it and use the free space',
     setAsCover: 'Use as cover',
     captionPlaceholder: 'Caption',
     dropOnPage: 'Drop here',

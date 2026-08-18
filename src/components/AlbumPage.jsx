@@ -1,4 +1,5 @@
-import { layoutPage, rotatedAspect } from '../utils/pageLayout'
+import { useRef, useState } from 'react'
+import { clampScale, layoutPage, rotatedAspect } from '../utils/pageLayout'
 
 export default function AlbumPage({
   photos,
@@ -20,21 +21,30 @@ export default function AlbumPage({
   onRotatePhoto,
   onCaptionChange,
   onSetCover,
+  onScaleChange,
   pageIndex,
   rotateLabel,
   coverLabel,
   captionPlaceholder,
   dropLabel,
+  resizeLabel,
 }) {
+  const resizeRef = useRef(null)
+  const [resizing, setResizing] = useState(null)
+
   const ready = photos.every((photo) => aspects[photo.id] != null)
   const photoAspects = photos.map((photo) =>
     rotatedAspect(aspects[photo.id] ?? 1, photo.rotation ?? 0),
   )
-  const { rects, pageW, pageH, fillRatio } = layoutPage({
+  const scales = photos.map((photo) =>
+    resizing?.id === photo.id ? resizing.scale : photo.scale ?? 1,
+  )
+  const { rects, baseRects, pageW, pageH, fillRatio } = layoutPage({
     aspects: photoAspects,
     photosPerPage,
     orientation,
     mode: layoutMode,
+    scales,
   })
   const isLandscape = orientation === 'landscape'
   const percent = Math.round(fillRatio * 100)
@@ -72,6 +82,70 @@ export default function AlbumPage({
     if (photoId && onMoveToPage && pageIndex != null) {
       onMoveToPage(photoId, pageIndex)
     }
+  }
+
+  function handleResizeDown(event, photo, index) {
+    const sheet = event.currentTarget.closest('.album-page-sheet')
+    const base = baseRects[index]
+    if (!sheet || !base) return
+
+    event.preventDefault()
+    event.stopPropagation()
+
+    const pxPerMm = sheet.getBoundingClientRect().width / pageW
+    const baseW = base.w * pxPerMm
+    const baseH = base.h * pxPerMm
+    const diagonal = Math.hypot(baseW, baseH) || 1
+    const startScale = photo.scale ?? 1
+
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId)
+    } catch {
+      // Without capture the resize still follows the pointer over the sheet.
+    }
+
+    resizeRef.current = {
+      id: photo.id,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startScale,
+      scale: startScale,
+      // Unit vector along the photo diagonal, so the corner follows the pointer.
+      dirX: baseW / diagonal,
+      dirY: baseH / diagonal,
+      diagonal,
+    }
+    setResizing({ id: photo.id, scale: startScale })
+  }
+
+  function handleResizeMove(event) {
+    const state = resizeRef.current
+    if (!state || state.pointerId !== event.pointerId) return
+
+    event.preventDefault()
+    const along =
+      (event.clientX - state.startX) * state.dirX +
+      (event.clientY - state.startY) * state.dirY
+    // The photo grows from its centre, so the corner moves half of the growth.
+    const scale = clampScale(state.startScale + (2 * along) / state.diagonal)
+
+    state.scale = scale
+    setResizing({ id: state.id, scale })
+  }
+
+  function handleResizeUp(event) {
+    const state = resizeRef.current
+    if (!state || state.pointerId !== event.pointerId) return
+
+    resizeRef.current = null
+    setResizing(null)
+    if (state.scale !== state.startScale) onScaleChange(state.id, state.scale)
+  }
+
+  function handleResizeCancel() {
+    resizeRef.current = null
+    setResizing(null)
   }
 
   function handleDropOnPhoto(event, targetId) {
@@ -176,9 +250,32 @@ export default function AlbumPage({
                     )}
                   </div>
                 )}
+                {!compact && onScaleChange && (
+                  <>
+                    {(resizing?.id === photo.id || scales[index] !== 1) && (
+                      <span className="album-photo-scale" aria-hidden="true">
+                        {Math.round(scales[index] * 100)}%
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      className="album-photo-resize"
+                      title={resizeLabel}
+                      aria-label={resizeLabel}
+                      onPointerDown={(event) => handleResizeDown(event, photo, index)}
+                      onPointerMove={handleResizeMove}
+                      onPointerUp={handleResizeUp}
+                      onPointerCancel={handleResizeCancel}
+                      onDoubleClick={() => onScaleChange(photo.id, 1)}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      ◢
+                    </button>
+                  </>
+                )}
                 {!compact && onCaptionChange && (
                   <input
-                    className="album-photo-caption"
+                    className={`album-photo-caption ${onScaleChange ? 'album-photo-caption--inset' : ''}`}
                     value={photo.caption || ''}
                     maxLength={40}
                     placeholder={captionPlaceholder}

@@ -82,6 +82,7 @@ function mapPhoto(record) {
     addedAt: record.addedAt,
     sortOrder: record.sortOrder ?? null,
     rotation: record.rotation ?? 0,
+    scale: record.scale ?? 1,
     caption: record.caption ?? '',
   }
 }
@@ -96,6 +97,7 @@ function photoRecord(photo) {
     addedAt: photo.addedAt,
     sortOrder: photo.sortOrder ?? null,
     rotation: photo.rotation ?? 0,
+    scale: photo.scale ?? 1,
     caption: photo.caption ?? '',
   }
 }

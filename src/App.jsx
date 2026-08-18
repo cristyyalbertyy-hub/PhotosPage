@@ -216,6 +216,15 @@ function App() {
     })
   }
 
+  async function handleScaleChange(id, scale) {
+    setPhotos((prev) => {
+      const updated = prev.map((p) => (p.id === id ? { ...p, scale } : p))
+      const photo = updated.find((p) => p.id === id)
+      if (photo) savePhoto(photo)
+      return updated
+    })
+  }
+
   async function handleCaptionChange(id, caption) {
     setPhotos((prev) => {
       const updated = prev.map((p) => (p.id === id ? { ...p, caption } : p))
@@ -392,6 +401,7 @@ function App() {
             onRotatePhoto={handleRotatePhoto}
             onCaptionChange={handleCaptionChange}
             onSetCover={handleSetCover}
+            onScaleChange={handleScaleChange}
           />
         )}
       </main>
