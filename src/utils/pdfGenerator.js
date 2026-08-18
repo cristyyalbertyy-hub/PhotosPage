@@ -133,6 +133,19 @@ function addCoverPage(pdf, cover, profile, orientation) {
   }
 }
 
+// Sheets may hold different numbers of photos, so the caller can hand over the
+// exact sizes it is showing in the album; otherwise they are all the same.
+function resolvePageSizes(count, photosPerPage, pageSizes) {
+  const total = pageSizes?.reduce((sum, size) => sum + size, 0) ?? 0
+  if (pageSizes?.length && total === count) return pageSizes
+
+  const sizes = []
+  for (let start = 0; start < count; start += photosPerPage) {
+    sizes.push(Math.min(photosPerPage, count - start))
+  }
+  return sizes
+}
+
 export async function estimatePdfSize(
   photoUrls,
   photosPerPage,
@@ -141,6 +154,7 @@ export async function estimatePdfSize(
   layoutMode = 'fill',
   photoItems,
   cover,
+  pageSizes,
 ) {
   const items = normalizePhotos(photoUrls, photoItems)
   if (items.length === 0 && !cover?.enabled) {
@@ -162,9 +176,11 @@ export async function estimatePdfSize(
     }
   }
 
-  for (let pageStart = 0; pageStart < images.length; pageStart += photosPerPage) {
-    const pageImages = images.slice(pageStart, pageStart + photosPerPage)
-    const pageItems = items.slice(pageStart, pageStart + photosPerPage)
+  let pageStart = 0
+  for (const size of resolvePageSizes(images.length, photosPerPage, pageSizes)) {
+    const pageImages = images.slice(pageStart, pageStart + size)
+    const pageItems = items.slice(pageStart, pageStart + size)
+    pageStart += size
     const { rects } = layoutPage({
       aspects: pageImages.map((img, i) => imageAspect(img, pageItems[i].rotation)),
       photosPerPage,
@@ -197,17 +213,36 @@ export async function estimatePdfSize(
   }
 }
 
-function splitItems(items, partCount) {
-  if (partCount <= 1) return [items]
-  const photosPerPart = Math.ceil(items.length / partCount)
+function groupIntoPages(items, sizes) {
+  const pages = []
+  let start = 0
+  for (const size of sizes) {
+    pages.push(items.slice(start, start + size))
+    start += size
+  }
+  return pages
+}
+
+// Email parts are cut between sheets, never inside one.
+function splitPages(pages, partCount) {
+  if (partCount <= 1) return [pages]
+  const pagesPerPart = Math.ceil(pages.length / partCount)
   const parts = []
-  for (let i = 0; i < items.length; i += photosPerPart) {
-    parts.push(items.slice(i, i + photosPerPart))
+  for (let i = 0; i < pages.length; i += pagesPerPart) {
+    parts.push(pages.slice(i, i + pagesPerPart))
   }
   return parts
 }
 
-async function buildPdfBlob(items, photosPerPage, orientation, profile, layoutMode, cover) {
+async function buildPdfBlob(
+  items,
+  photosPerPage,
+  orientation,
+  profile,
+  layoutMode,
+  cover,
+  pageSizes,
+) {
   const pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4' })
   const images = await Promise.all(items.map((item) => loadImageElement(item.url)))
   let started = false
@@ -223,12 +258,14 @@ async function buildPdfBlob(items, photosPerPage, orientation, profile, layoutMo
     started = true
   }
 
-  for (let pageStart = 0; pageStart < images.length; pageStart += photosPerPage) {
+  let pageStart = 0
+  for (const size of resolvePageSizes(images.length, photosPerPage, pageSizes)) {
     if (started) pdf.addPage(orientation, 'a4')
     started = true
 
-    const pageImages = images.slice(pageStart, pageStart + photosPerPage)
-    const pageItems = items.slice(pageStart, pageStart + photosPerPage)
+    const pageImages = images.slice(pageStart, pageStart + size)
+    const pageItems = items.slice(pageStart, pageStart + size)
+    pageStart += size
     const { rects } = layoutPage({
       aspects: pageImages.map((img, i) => imageAspect(img, pageItems[i].rotation)),
       photosPerPage,
@@ -281,6 +318,7 @@ export async function buildPdfFiles({
   photoUrls,
   photoItems,
   photosPerPage,
+  pageSizes,
   filename,
   orientation = 'portrait',
   quality = 'email',
@@ -303,21 +341,26 @@ export async function buildPdfFiles({
     layoutMode,
     items,
     cover,
+    pageSizes,
   )
-  const shouldSplit = !estimate.fitsEmail
-  const parts = shouldSplit ? splitItems(items, estimate.partCount) : [items]
+  const sizes = resolvePageSizes(items.length, photosPerPage, pageSizes)
+  const allPages = groupIntoPages(items, sizes)
+  const parts = estimate.fitsEmail
+    ? [allPages]
+    : splitPages(allPages, estimate.partCount)
 
   const files = []
   for (let i = 0; i < parts.length; i++) {
     onProgress?.({ current: i + 1, total: parts.length })
     const partCover = i === 0 ? cover : null
     const blob = await buildPdfBlob(
-      parts[i],
+      parts[i].flat(),
       photosPerPage,
       orientation,
       profile,
       layoutMode,
       partCover,
+      parts[i].map((pagePhotos) => pagePhotos.length),
     )
     const partName =
       parts.length === 1 ? `${safeName}.pdf` : `${safeName}_parte${i + 1}.pdf`
@@ -338,6 +381,7 @@ export async function generatePdf({
   photoUrls,
   photoItems,
   photosPerPage,
+  pageSizes,
   filename,
   orientation = 'portrait',
   quality = 'email',
@@ -350,6 +394,7 @@ export async function generatePdf({
     photoUrls,
     photoItems,
     photosPerPage,
+    pageSizes,
     filename,
     orientation,
     quality,

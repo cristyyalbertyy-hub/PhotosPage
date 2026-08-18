@@ -125,7 +125,7 @@ export const translations = {
     layoutModeFill: 'Preencher espaço',
     layoutModeGrid: 'Grelha',
     layoutModeHint_fill:
-      'As fotos ficam com tamanho semelhante e ocupam a folha de forma equilibrada',
+      'A app escolhe quantas fotos entram em cada folha para deixar o menor espaço em branco',
     layoutModeHint_grid:
       'Tamanhos iguais numa grelha clássica — pode sobrar mais espaço em branco',
     quality: 'Qualidade',
@@ -146,6 +146,9 @@ export const translations = {
     portrait: 'Retrato',
     landscape: 'Paisagem',
     photosPerPage: 'Fotos por página',
+    photosPerPageFlexible:
+      'Valor médio: cada folha pode levar mais ou menos fotos, conforme o que preenche melhor',
+    photosPerPageExact: 'Número exacto de fotos em cada folha',
     filename: 'Nome do ficheiro',
     printSummary: (photos, pages) =>
       `${photos} foto${photos !== 1 ? 's' : ''} → ${pages} página${pages !== 1 ? 's' : ''}`,
@@ -287,7 +290,7 @@ export const translations = {
     layoutModeFill: 'Fill space',
     layoutModeGrid: 'Grid',
     layoutModeHint_fill:
-      'Photos stay a similar size and share the page evenly',
+      'The app decides how many photos go on each sheet to leave the least whitespace',
     layoutModeHint_grid:
       'Equal sizes in a classic grid — more leftover whitespace is likely',
     quality: 'Quality',
@@ -308,6 +311,9 @@ export const translations = {
     portrait: 'Portrait',
     landscape: 'Landscape',
     photosPerPage: 'Photos per page',
+    photosPerPageFlexible:
+      'Average value: each sheet may take more or fewer photos, whichever fills it best',
+    photosPerPageExact: 'Exact number of photos on every sheet',
     filename: 'File name',
     printSummary: (photos, pages) =>
       `${photos} photo${photos !== 1 ? 's' : ''} → ${pages} page${pages !== 1 ? 's' : ''}`,

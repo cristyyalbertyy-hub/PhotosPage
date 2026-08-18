@@ -281,10 +281,3 @@ export function layoutPage({
   }
 }
 
-export function chunkPhotos(photos, photosPerPage) {
-  const pages = []
-  for (let i = 0; i < photos.length; i += photosPerPage) {
-    pages.push(photos.slice(i, i + photosPerPage))
-  }
-  return pages
-}

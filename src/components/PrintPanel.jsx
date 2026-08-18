@@ -15,6 +15,12 @@ import {
 } from '../utils/pdfGenerator'
 import AlbumViewer from './AlbumViewer'
 import LayoutPreview from './LayoutPreview'
+import { rotatedAspect } from '../utils/pageLayout'
+import {
+  chunkBySizes,
+  fixedPageSizes,
+  pageSizesByFill,
+} from '../utils/pagination'
 
 const EMAIL_MESSAGE_KEY = 'photosPage-email-message'
 const EMPTY_PAGES = new Set()
@@ -23,7 +29,7 @@ export default function PrintPanel({
   photos,
   album,
   onUpdateAlbum,
-  onMoveToPage,
+  onMoveToPosition,
   onReorderPhotos,
   onRotatePhoto,
   onCaptionChange,
@@ -55,16 +61,45 @@ export default function PrintPanel({
     () => photos.filter((p) => p.selected),
     [photos],
   )
-  const pageKey = `${photosPerPage}:${selectedPhotos.map((p) => p.id).join(',')}`
-  const excludedPages =
-    album.excludedKey === pageKey ? new Set(album.excludedPages) : EMPTY_PAGES
-  const includedPhotos = useMemo(
+  const aspects = usePhotoAspects(selectedPhotos)
+  // In "fill" mode each sheet may hold a different number of photos, chosen so
+  // that the shapes of the photos leave as little white space as possible.
+  const pageSizes = useMemo(() => {
+    const ready = selectedPhotos.every((photo) => aspects[photo.id] != null)
+    if (layoutMode !== 'fill' || !ready) {
+      return fixedPageSizes(selectedPhotos.length, photosPerPage)
+    }
+    return pageSizesByFill({
+      aspects: selectedPhotos.map((photo) =>
+        rotatedAspect(aspects[photo.id], photo.rotation ?? 0),
+      ),
+      perPage: photosPerPage,
+      orientation,
+    })
+  }, [selectedPhotos, aspects, layoutMode, photosPerPage, orientation])
+  const pages = useMemo(
+    () => chunkBySizes(selectedPhotos, pageSizes),
+    [selectedPhotos, pageSizes],
+  )
+  const pageKey = `${photosPerPage}:${layoutMode}:${pageSizes.join('.')}:${selectedPhotos
+    .map((p) => p.id)
+    .join(',')}`
+  const excludedPages = useMemo(
     () =>
-      selectedPhotos.filter((_, index) => {
-        const pageIndex = Math.floor(index / photosPerPage)
-        return !excludedPages.has(pageIndex)
-      }),
-    [selectedPhotos, photosPerPage, excludedPages],
+      album.excludedKey === pageKey ? new Set(album.excludedPages) : EMPTY_PAGES,
+    [album.excludedKey, album.excludedPages, pageKey],
+  )
+  const includedPages = useMemo(
+    () => pages.filter((_, index) => !excludedPages.has(index)),
+    [pages, excludedPages],
+  )
+  const includedPhotos = useMemo(
+    () => includedPages.flat(),
+    [includedPages],
+  )
+  const includedPageSizes = useMemo(
+    () => includedPages.map((pagePhotos) => pagePhotos.length),
+    [includedPages],
   )
   const photoItems = useMemo(
     () =>
@@ -99,8 +134,16 @@ export default function PrintPanel({
       coverPhoto?.rotation,
     ],
   )
-  const aspects = usePhotoAspects(selectedPhotos)
   const canExport = includedPhotos.length > 0 || album.includeCover
+
+  function handleMoveToPage(photoId, pageIndex) {
+    const start = pageSizes
+      .slice(0, pageIndex)
+      .reduce((total, size) => total + size, 0)
+    // Sheet limits are recalculated after the move, so the photo is dropped in
+    // the middle of the target sheet to make sure it stays on it.
+    onMoveToPosition(photoId, start + Math.floor((pageSizes[pageIndex] ?? 0) / 2))
+  }
 
   function togglePageIncluded(pageIndex) {
     const current =
@@ -133,6 +176,7 @@ export default function PrintPanel({
           layoutMode,
           photoItems,
           cover,
+          includedPageSizes,
         )
         if (!cancelled) setEstimate(result)
       } catch {
@@ -146,7 +190,15 @@ export default function PrintPanel({
       cancelled = true
       clearTimeout(timer)
     }
-  }, [photoItems, photosPerPage, orientation, quality, layoutMode, cover])
+  }, [
+    photoItems,
+    photosPerPage,
+    orientation,
+    quality,
+    layoutMode,
+    cover,
+    includedPageSizes,
+  ])
 
   useEffect(() => {
     if (estimate?.partCount > 1) setDownloadAsZip(true)
@@ -197,6 +249,7 @@ export default function PrintPanel({
       const result = await buildPdfFiles({
         photoItems,
         photosPerPage,
+        pageSizes: includedPageSizes,
         filename,
         orientation,
         quality,
@@ -251,6 +304,7 @@ export default function PrintPanel({
       await generatePdf({
         photoItems,
         photosPerPage,
+        pageSizes: includedPageSizes,
         filename,
         orientation,
         quality,
@@ -273,8 +327,8 @@ export default function PrintPanel({
     }
   }
 
-  const totalPages = Math.ceil(selectedPhotos.length / photosPerPage)
-  const includedPageCount = totalPages - excludedPages.size
+  const totalPages = pages.length
+  const includedPageCount = includedPages.length
 
   function renderSizeEstimate() {
     if (selectedPhotos.length === 0) return null
@@ -365,6 +419,11 @@ export default function PrintPanel({
               </button>
             ))}
           </div>
+          <span className="control-hint">
+            {layoutMode === 'fill'
+              ? t('photosPerPageFlexible')
+              : t('photosPerPageExact')}
+          </span>
         </label>
 
         <label className="control-group">
@@ -393,6 +452,7 @@ export default function PrintPanel({
         {selectedPhotos.length > 0 ? (
           <AlbumViewer
             photos={selectedPhotos}
+            pages={pages}
             aspects={aspects}
             photosPerPage={photosPerPage}
             orientation={orientation}
@@ -401,7 +461,7 @@ export default function PrintPanel({
             onTogglePage={togglePageIncluded}
             album={album}
             onUpdateAlbum={onUpdateAlbum}
-            onMoveToPage={onMoveToPage}
+            onMoveToPage={handleMoveToPage}
             onReorderPhotos={onReorderPhotos}
             onRotatePhoto={onRotatePhoto}
             onCaptionChange={onCaptionChange}

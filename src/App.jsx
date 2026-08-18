@@ -185,15 +185,16 @@ function App() {
     await persistReorder(next)
   }
 
-  async function handleMoveToPage(photoId, targetPageIndex) {
-    const perPage = currentAlbum?.photosPerPage || 4
+  // Sheets can hold different numbers of photos, so the album panel sends the
+  // position where the sheet starts instead of a sheet number.
+  async function handleMoveToPosition(photoId, targetIndex) {
     const selected = photos.filter((p) => p.selected)
     const from = selected.findIndex((p) => p.id === photoId)
     if (from === -1) return
 
     const nextSelected = [...selected]
     const [moved] = nextSelected.splice(from, 1)
-    let insertAt = Math.min(targetPageIndex * perPage, nextSelected.length)
+    let insertAt = Math.min(Math.max(targetIndex, 0), nextSelected.length)
     if (from < insertAt) insertAt = Math.max(0, insertAt - 1)
     nextSelected.splice(insertAt, 0, moved)
 
@@ -396,7 +397,7 @@ function App() {
             photos={photos}
             album={currentAlbum}
             onUpdateAlbum={handleUpdateAlbum}
-            onMoveToPage={handleMoveToPage}
+            onMoveToPosition={handleMoveToPosition}
             onReorderPhotos={handleReorder}
             onRotatePhoto={handleRotatePhoto}
             onCaptionChange={handleCaptionChange}

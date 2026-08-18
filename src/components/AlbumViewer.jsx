@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useLanguage } from '../i18n/LanguageContext'
-import { chunkPhotos } from '../utils/pageLayout'
 import AlbumPage from './AlbumPage'
 import CoverSheet from './CoverSheet'
 
 export default function AlbumViewer({
   photos,
+  pages,
   aspects,
   photosPerPage,
   orientation,
@@ -22,7 +22,6 @@ export default function AlbumViewer({
   onScaleChange,
 }) {
   const { t } = useLanguage()
-  const pages = chunkPhotos(photos, photosPerPage)
   const [pageIndex, setPageIndex] = useState(0)
   const totalPhotoPages = pages.length
   const totalViews = totalPhotoPages + 1
