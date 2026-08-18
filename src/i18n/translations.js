@@ -32,10 +32,8 @@ export const translations = {
     selectedEmpty:
       'Ainda não escolheu fotos. Vá a Lista de Fotos e marque as que quer imprimir (✓).',
     selectedDragHint:
-      'Só as fotos escolhidas aparecem aqui — arraste, ou use ◀ ▶, para definir a ordem',
+      'Arraste cada foto para a posição que quiser — no telemóvel, arraste pelo ⠿',
     openAlbum: 'Ver folhas do álbum',
-    moveEarlier: 'Mover para trás',
-    moveLater: 'Mover para a frente',
     entryTitle: 'Entrada de Fotos',
     entryDesc:
       'Escolha uma ou várias imagens. Remova as que não quiser (✕) e depois adicione à coleção.',
@@ -196,10 +194,8 @@ export const translations = {
     selectedEmpty:
       'No photos chosen yet. Go to Photo List and tick the ones you want to print (✓).',
     selectedDragHint:
-      'Only chosen photos show here — drag, or use ◀ ▶, to set the order',
+      'Drag any photo to the position you want — on mobile, drag it by the ⠿',
     openAlbum: 'Preview album pages',
-    moveEarlier: 'Move earlier',
-    moveLater: 'Move later',
     entryTitle: 'Photo Entry',
     entryDesc:
       'Choose one or more images. Remove any you do not want (✕), then add to the collection.',

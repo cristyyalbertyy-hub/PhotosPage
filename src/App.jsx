@@ -168,15 +168,17 @@ function App() {
     await persistReorder(next)
   }
 
-  async function handleReorderSelected(fromId, toId) {
+  async function handleReorderSelected(fromId, toIndex) {
     const selected = photos.filter((p) => p.selected)
     const fromIndex = selected.findIndex((p) => p.id === fromId)
-    const toIndex = selected.findIndex((p) => p.id === toId)
-    if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return
+    if (fromIndex === -1) return
+
+    const target = Math.max(0, Math.min(toIndex, selected.length - 1))
+    if (target === fromIndex) return
 
     const nextSelected = [...selected]
     const [moved] = nextSelected.splice(fromIndex, 1)
-    nextSelected.splice(toIndex, 0, moved)
+    nextSelected.splice(target, 0, moved)
 
     let cursor = 0
     const next = photos.map((photo) => (photo.selected ? nextSelected[cursor++] : photo))
