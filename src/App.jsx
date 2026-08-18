@@ -11,6 +11,7 @@ import {
   deletePhoto,
   loadAlbumPhotos,
   loadWorkspace,
+  movePhotosToAlbum,
   saveAlbum,
   saveAllSelections,
   savePhoto,
@@ -228,6 +229,30 @@ function App() {
     await savePhotoOrder(reordered)
   }
 
+  async function handleMoveToAlbum(targetAlbumId) {
+    if (!targetAlbumId || targetAlbumId === currentAlbumId) return
+
+    const moving = photos.filter((p) => p.selected)
+    if (moving.length === 0) return
+
+    const remaining = photos
+      .filter((p) => !p.selected)
+      .map((p, i) => ({ ...p, sortOrder: i }))
+
+    await movePhotosToAlbum(moving, targetAlbumId)
+    await savePhotoOrder(remaining)
+
+    moving.forEach((p) => URL.revokeObjectURL(p.url))
+    setPhotos(remaining)
+
+    if (
+      currentAlbum?.coverPhotoId &&
+      moving.some((p) => p.id === currentAlbum.coverPhotoId)
+    ) {
+      await handleUpdateAlbum({ coverPhotoId: null })
+    }
+  }
+
   const selectedCount = photos.filter((p) => p.selected).length
 
   if (loading || !currentAlbum) {
@@ -307,11 +332,14 @@ function App() {
         {activeTab === 'lista' && (
           <PhotoList
             photos={photos}
+            albums={albums}
+            currentAlbumId={currentAlbumId}
             onToggleSelect={handleToggleSelect}
             onRemove={handleRemove}
             onSelectAll={handleSelectAll}
             onClearAll={handleClearAll}
             onRemoveSelected={handleRemoveSelected}
+            onMoveToAlbum={handleMoveToAlbum}
             onReorder={handleReorder}
             onRotatePhoto={handleRotatePhoto}
           />

@@ -56,6 +56,13 @@ export const translations = {
     confirmYes: 'Sim, limpar tudo',
     confirmNo: 'Cancelar',
     removeSelected: 'Apagar selecionadas',
+    moveToAlbum: 'Mover para álbum',
+    confirmMoveTitle: (n) =>
+      `Mover ${n} foto${n !== 1 ? 's' : ''} para outro álbum?`,
+    confirmMoveMessage:
+      'As fotos selecionadas saem deste álbum e passam para o álbum escolhido.',
+    confirmMoveYes: 'Mover',
+    moveAlbumLabel: 'Álbum de destino',
     confirmRemoveSelectedTitle: (n) =>
       `Apagar ${n} foto${n !== 1 ? 's' : ''} selecionada${n !== 1 ? 's' : ''}?`,
     confirmRemoveSelectedMessage:
@@ -200,6 +207,13 @@ export const translations = {
     confirmYes: 'Yes, clear all',
     confirmNo: 'Cancel',
     removeSelected: 'Delete selected',
+    moveToAlbum: 'Move to album',
+    confirmMoveTitle: (n) =>
+      `Move ${n} photo${n !== 1 ? 's' : ''} to another album?`,
+    confirmMoveMessage:
+      'Selected photos will leave this album and go to the album you choose.',
+    confirmMoveYes: 'Move',
+    moveAlbumLabel: 'Destination album',
     confirmRemoveSelectedTitle: (n) =>
       `Delete ${n} selected photo${n !== 1 ? 's' : ''}?`,
     confirmRemoveSelectedMessage:

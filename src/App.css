@@ -376,10 +376,53 @@ section h2 {
   cursor: not-allowed;
 }
 
+.btn-move-album {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-h);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: border-color 0.15s, background 0.15s, opacity 0.15s;
+}
+
+.btn-move-album:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+
+.btn-move-album:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .list-actions {
   display: flex;
   flex-shrink: 0;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.move-album-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.move-album-field select {
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: var(--surface);
+  color: var(--text-h);
 }
 
 .photo-grid {
@@ -1379,6 +1422,7 @@ section h2 {
   }
 
   .btn-select-all,
+  .btn-move-album,
   .btn-remove-selected,
   .btn-clear-all {
     flex: 1;

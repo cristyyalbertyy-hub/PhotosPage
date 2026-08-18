@@ -4,19 +4,25 @@ import { useLanguage } from '../i18n/LanguageContext'
 
 export default function PhotoList({
   photos,
+  albums = [],
+  currentAlbumId,
   onToggleSelect,
   onRemove,
   onSelectAll,
   onClearAll,
   onRemoveSelected,
+  onMoveToAlbum,
   onReorder,
   onRotatePhoto,
 }) {
   const { t } = useLanguage()
   const [confirmClearOpen, setConfirmClearOpen] = useState(false)
   const [confirmRemoveSelectedOpen, setConfirmRemoveSelectedOpen] = useState(false)
+  const [moveOpen, setMoveOpen] = useState(false)
+  const [targetAlbumId, setTargetAlbumId] = useState('')
   const [draggedId, setDraggedId] = useState(null)
   const [dropTargetId, setDropTargetId] = useState(null)
+  const otherAlbums = albums.filter((album) => album.id !== currentAlbumId)
 
   if (photos.length === 0) {
     return (
@@ -39,6 +45,17 @@ export default function PhotoList({
     setConfirmRemoveSelectedOpen(false)
     const ids = photos.filter((p) => p.selected).map((p) => p.id)
     await onRemoveSelected(ids)
+  }
+
+  function openMoveDialog() {
+    setTargetAlbumId(otherAlbums[0]?.id || '')
+    setMoveOpen(true)
+  }
+
+  async function handleConfirmMove() {
+    if (!targetAlbumId) return
+    setMoveOpen(false)
+    await onMoveToAlbum(targetAlbumId)
   }
 
   function handleDragStart(e, id) {
@@ -96,6 +113,16 @@ export default function PhotoList({
           >
             {allSelected ? t('deselectAll') : t('selectAll')}
           </button>
+          {otherAlbums.length > 0 && (
+            <button
+              type="button"
+              className="btn-move-album"
+              onClick={openMoveDialog}
+              disabled={selectedCount === 0}
+            >
+              {t('moveToAlbum')}
+            </button>
+          )}
           <button
             type="button"
             className="btn-remove-selected"
@@ -185,6 +212,31 @@ export default function PhotoList({
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={moveOpen}
+        title={t('confirmMoveTitle', selectedCount)}
+        message={t('confirmMoveMessage')}
+        confirmLabel={t('confirmMoveYes')}
+        cancelLabel={t('confirmNo')}
+        confirmTone="primary"
+        onConfirm={handleConfirmMove}
+        onCancel={() => setMoveOpen(false)}
+      >
+        <label className="move-album-field">
+          <span>{t('moveAlbumLabel')}</span>
+          <select
+            value={targetAlbumId}
+            onChange={(event) => setTargetAlbumId(event.target.value)}
+          >
+            {otherAlbums.map((album) => (
+              <option key={album.id} value={album.id}>
+                {album.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </ConfirmDialog>
 
       <ConfirmDialog
         open={confirmRemoveSelectedOpen}

@@ -187,6 +187,23 @@ export async function savePhotoOrder(photos) {
   await Promise.all(photos.map((photo) => savePhoto(photo)))
 }
 
+export async function movePhotosToAlbum(photos, targetAlbumId) {
+  const db = await openDB()
+  const allPhotos = await storeGetAll(db, PHOTOS_STORE)
+  const destCount = allPhotos.filter((record) => record.albumId === targetAlbumId)
+    .length
+
+  await Promise.all(
+    photos.map((photo, i) =>
+      savePhoto({
+        ...photo,
+        albumId: targetAlbumId,
+        sortOrder: destCount + i,
+      }),
+    ),
+  )
+}
+
 export async function clearAlbumPhotos(albumId) {
   const db = await openDB()
   const allPhotos = await storeGetAll(db, PHOTOS_STORE)
