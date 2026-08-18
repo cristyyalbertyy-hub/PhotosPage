@@ -24,7 +24,18 @@ export const translations = {
     loading: 'A carregar fotos guardadas...',
     tabEntry: 'Entrada de Fotos',
     tabList: 'Lista de Fotos',
+    tabSelected: 'Fotos Selecionadas',
     tabAlbum: 'Álbum',
+    selectedTitle: 'Fotos Selecionadas',
+    selectedCount: (n) =>
+      `${n} foto${n !== 1 ? 's' : ''} escolhida${n !== 1 ? 's' : ''} para o álbum`,
+    selectedEmpty:
+      'Ainda não escolheu fotos. Vá a Lista de Fotos e marque as que quer imprimir (✓).',
+    selectedDragHint:
+      'Só as fotos escolhidas aparecem aqui — arraste, ou use ◀ ▶, para definir a ordem',
+    openAlbum: 'Ver folhas do álbum',
+    moveEarlier: 'Mover para trás',
+    moveLater: 'Mover para a frente',
     entryTitle: 'Entrada de Fotos',
     entryDesc:
       'Escolha uma ou várias imagens. Remova as que não quiser (✕) e depois adicione à coleção.',
@@ -42,7 +53,8 @@ export const translations = {
     selectedOf: (n, total) =>
       `${n} de ${total} selecionada${n !== 1 ? 's' : ''}`,
     dragToReorder: 'Arraste as fotos para definir a ordem do álbum',
-    albumListHint: 'Selecione as fotos (✓) e abra o separador Álbum para ver as folhas',
+    albumListHint:
+      'Marque as fotos (✓) e abra Fotos Selecionadas para definir a ordem do álbum',
     dragHandle: 'Arrastar para reordenar',
     selectAll: 'Selecionar todas',
     deselectAll: 'Desselecionar todas',
@@ -177,7 +189,17 @@ export const translations = {
     loading: 'Loading saved photos...',
     tabEntry: 'Photo Entry',
     tabList: 'Photo List',
+    tabSelected: 'Selected Photos',
     tabAlbum: 'Album',
+    selectedTitle: 'Selected Photos',
+    selectedCount: (n) => `${n} photo${n !== 1 ? 's' : ''} chosen for the album`,
+    selectedEmpty:
+      'No photos chosen yet. Go to Photo List and tick the ones you want to print (✓).',
+    selectedDragHint:
+      'Only chosen photos show here — drag, or use ◀ ▶, to set the order',
+    openAlbum: 'Preview album pages',
+    moveEarlier: 'Move earlier',
+    moveLater: 'Move later',
     entryTitle: 'Photo Entry',
     entryDesc:
       'Choose one or more images. Remove any you do not want (✕), then add to the collection.',
@@ -193,7 +215,7 @@ export const translations = {
     listEmpty: 'No photos yet. Add some in the entry section.',
     selectedOf: (n, total) => `${n} of ${total} selected`,
     dragToReorder: 'Drag photos to set the album order',
-    albumListHint: 'Select photos (✓) and open the Album tab to preview the pages',
+    albumListHint: 'Tick photos (✓) and open Selected Photos to set the album order',
     dragHandle: 'Drag to reorder',
     selectAll: 'Select all',
     deselectAll: 'Deselect all',

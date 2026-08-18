@@ -431,6 +431,36 @@ section h2 {
   gap: 16px;
 }
 
+.photo-steps {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  display: flex;
+  gap: 4px;
+  z-index: 2;
+}
+
+.photo-steps button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  color: white;
+  font-size: 0.75rem;
+  line-height: 1;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.photo-steps button:hover:not(:disabled) {
+  background: var(--accent);
+}
+
+.photo-steps button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 .photo-card {
   position: relative;
   aspect-ratio: 1;

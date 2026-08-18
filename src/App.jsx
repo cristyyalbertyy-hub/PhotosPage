@@ -3,6 +3,7 @@ import AlbumSwitcher from './components/AlbumSwitcher'
 import PhotoEntry from './components/PhotoEntry'
 import PhotoList from './components/PhotoList'
 import PrintPanel from './components/PrintPanel'
+import SelectedPhotos from './components/SelectedPhotos'
 import { useLanguage } from './i18n/LanguageContext'
 import {
   clearAlbumPhotos,
@@ -167,6 +168,21 @@ function App() {
     await persistReorder(next)
   }
 
+  async function handleReorderSelected(fromId, toId) {
+    const selected = photos.filter((p) => p.selected)
+    const fromIndex = selected.findIndex((p) => p.id === fromId)
+    const toIndex = selected.findIndex((p) => p.id === toId)
+    if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return
+
+    const nextSelected = [...selected]
+    const [moved] = nextSelected.splice(fromIndex, 1)
+    nextSelected.splice(toIndex, 0, moved)
+
+    let cursor = 0
+    const next = photos.map((photo) => (photo.selected ? nextSelected[cursor++] : photo))
+    await persistReorder(next)
+  }
+
   async function handleMoveToPage(photoId, targetPageIndex) {
     const perPage = currentAlbum?.photosPerPage || 4
     const selected = photos.filter((p) => p.selected)
@@ -318,6 +334,14 @@ function App() {
         </button>
         <button
           type="button"
+          className={`menu-btn ${activeTab === 'selecionadas' ? 'active' : ''}`}
+          onClick={() => setActiveTab('selecionadas')}
+        >
+          ✓ {t('tabSelected')}
+          {selectedCount > 0 && <span className="badge">{selectedCount}</span>}
+        </button>
+        <button
+          type="button"
           className={`menu-btn ${activeTab === 'album' ? 'active' : ''}`}
           onClick={() => setActiveTab('album')}
         >
@@ -342,6 +366,17 @@ function App() {
             onMoveToAlbum={handleMoveToAlbum}
             onReorder={handleReorder}
             onRotatePhoto={handleRotatePhoto}
+          />
+        )}
+
+        {activeTab === 'selecionadas' && (
+          <SelectedPhotos
+            photos={photos}
+            onToggleSelect={handleToggleSelect}
+            onReorderSelected={handleReorderSelected}
+            onRotatePhoto={handleRotatePhoto}
+            onDeselectAll={() => handleSelectAll(false)}
+            onOpenAlbum={() => setActiveTab('album')}
           />
         )}
 
